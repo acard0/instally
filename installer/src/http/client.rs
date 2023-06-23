@@ -4,7 +4,7 @@ use std::{error::Error, fs::File, io::Write, cmp::min};
 use bytes::Bytes;
 
 pub async fn test() -> Result<String, Box<dyn std::error::Error>> {
-    let resp = reqwest::get("https://cdn.eastbloodacar.net/downloads/tutucu/release/Updates.xml")
+    let resp = reqwest::get("http://www.gstatic.com/generate_204")
         .await?
         .text()
         .await?;
