@@ -28,7 +28,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // create app state holder that is thread-safe
     let app = Box::leak(Box::new(|| {
-        InstallerApp::new(Product {
+        InstallerApp::new(Product { // prototype 'Product' structure
             name: "Tutucu".to_owned(),
             publisher: "liteware".to_owned(),
             product_url: "https://liteware.io".to_owned(),
