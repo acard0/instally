@@ -15,18 +15,11 @@ where TState: Display + Send + Clone + 'static {
     }
 }
 
-impl<TState> ContextAccessor<TState> for AppWrapper<TState> 
-where TState: Display + Send + Clone + 'static {
-    fn get_context(&self) -> ContextArcT<TState> {
-        self.app.get_context()
-    }
-}
-
 impl<TState> eframe::App for AppWrapper<TState>
 where TState: Display + Send + Clone + 'static {
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
 
-        let binding = self.get_context();
+        let binding = self.app.context.clone();
         let mut app = binding.lock();
 
         custom_window_frame(ctx, frame, format!("instally {}", app.frame_count).as_ref(), |ui| {

@@ -7,14 +7,15 @@
 mod http;
 mod app;
 mod workloads;
+mod archiving;
 
-use crate::{app::AppWrapper};
+use crate::{app::AppWrapper, workloads::abstraction::Worker};
 
 use std::{sync::{Arc}};
 
 use eframe::{egui};
 use parking_lot::{Mutex};
-use workloads::{installer::{InstallerWorkloadState, InstallerWrapper}, abstraction::{InstallyApp, Workload, AppContext}};
+use workloads::{installer::{InstallerWorkloadState, InstallerWrapper, Product}, abstraction::{InstallyApp, Workload, AppContext, WorkloadResult}};
 
 pub type InstallerContext = AppContext<InstallerWorkloadState>;
 pub type InstallerApp = InstallyApp<InstallerWorkloadState>;
@@ -27,7 +28,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // create app state holder that is thread-safe
     let app = Box::leak(Box::new(|| {
-        InstallerApp::default()
+        InstallerApp::new(Product {
+            name: "Tutucu".to_owned(),
+            publisher: "liteware".to_owned(),
+            product_url: "https://liteware.io".to_owned(),
+            control_script: "none".to_owned(),
+            target_directory: "%appdata%\\liteware.io\\tutucu\\".to_owned(),
+            repository: "https://cdn.liteware.xyz/instally/tutucu/release/".to_owned()
+        })
     }))();
 
     // spawn worker thread
@@ -36,10 +44,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let installer = InstallerWrapper::new(clone_worker); 
         let workload_result = installer.run().await;
 
-        if !workload_result.is_ok() {
-            let msg = workload_result.get_error().unwrap();
-            log::error!("{msg}");
+        match workload_result {
+            Ok(()) => {
+                installer.set_result(WorkloadResult::Ok);
+                installer.set_workload_state(InstallerWorkloadState::Done);
+                println!("Workload completed");
+            },
+            Err(err) => {
+                installer.set_result(WorkloadResult::Error(err.to_string()));
+                installer.set_workload_state(InstallerWorkloadState::Interrupted("Failed due to an error".to_owned()));
+                log::error!("\n{err:?}")
+            }
         }
+
     });
 
     // build native opts
