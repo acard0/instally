@@ -1,14 +1,14 @@
 
-use std::{fmt::{Display, self}, sync::Arc, result};
+use std::{fmt::{Display, self}, sync::Arc, result, io::Read};
 use async_trait::async_trait;
-use error_stack::{Result, Context, IntoReport, ResultExt};
+
 use filepath::FilePath;
 use parking_lot::{Mutex};
 use serde_xml_rs::from_str;
 
-use crate::{http::{client::{self, HttpStreamError}}, archiving};
+use crate::{http::{client::{self, HttpStreamError}, self}, archiving};
 
-use super::installer::{Product, Repository, Package, PackageFile};
+use super::installer::{Product, Repository, Package, PackageFile, InstallitionSummary};
 
 #[derive(Clone)]
 pub enum WorkloadResult {
@@ -33,59 +33,49 @@ where TState: Display + Send + Clone + 'static {
     pub context: Arc<Mutex<AppContext<TState>>>,
 }
 
-#[derive(Debug, Clone)]
-pub struct WorkloadError {}
-impl Context for WorkloadError {}
-impl fmt::Display for WorkloadError {
-    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
-        fmt.write_str("Failed to complete the workload gracefully")
-    }
+#[derive(thiserror::Error, Debug)]
+pub enum WorkloadError {
+    #[error("{0}")]
+    Other(String)
 }
 
-#[derive(Debug, Clone)]
+#[derive(thiserror::Error, Debug)]
 pub enum RepositoryFetchError {
-    NetworkError(String),
-    ParseError(String),
-}
-impl Context for RepositoryFetchError {}
-impl fmt::Display for RepositoryFetchError {
-    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
-        fmt.write_str("RepositoryFetchError: Failed to fetch repository from repo uri")
-    }
+    #[error("A error accured while pulling remote repository. {0}")]
+    NetworkError(#[from] HttpStreamError),
+
+    #[error("A error accured while parsing remote repository structure. {0}")]
+    ParseError(#[from] serde_xml_rs::Error),
 }
 
-#[derive(Debug, Clone)]
+#[derive(thiserror::Error, Debug)]
+pub enum WeakStructParseError {
+
+    #[error("IO Error accured while pulling weak structure from file. {0}")]
+    IOError(#[from] std::io::Error),
+
+    #[error("An error accured while parsing weak structure from file. {0}")]
+    ParseError(#[from] serde_xml_rs::Error)
+}
+
+#[derive(thiserror::Error, Debug)]
 pub enum PackageDownloadError {
-    NetworkError(String),
-    IOError(String)
-}
-impl Context for PackageDownloadError {}
-impl fmt::Display for PackageDownloadError {
-    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
-        fmt.write_str("DownloadPackageError: Failed to download the package")
-    }
+
+    #[error("A error accured while pulling package from repository. {0}")]
+    NetworkError(#[from] HttpStreamError),
+
+    #[error("An error accured while downloading a package. {0}")]
+    IOError(#[from] std::io::Error)
 }
 
-#[derive(Debug, Clone)]
+
+#[derive(thiserror::Error, Debug)]
 pub enum PackageInstallError {
-    IOError(String),
-    ArchiveError(String)
-}
-impl Context for PackageInstallError {}
-impl fmt::Display for PackageInstallError {
-    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
-        fmt.write_str("PackageDownloadError: Failed to install the package")
-    }
-}
-impl From<zip::result::ZipError> for PackageInstallError {
-    fn from(value: zip::result::ZipError) -> Self {
-        match value {
-            zip::result::ZipError::Io(r) => PackageInstallError::IOError(r.to_string()),
-            zip::result::ZipError::InvalidArchive(r) => PackageInstallError::ArchiveError(r.to_string()),
-            zip::result::ZipError::UnsupportedArchive(r) => PackageInstallError::ArchiveError(r.to_string()),
-            _ => PackageInstallError::IOError(format!("Failed to find the archive file"))
-        }
-    }
+    #[error("An error accured while reading package file. {0}")]
+    IOError(#[from] std::io::Error),
+
+    #[error("An error accured while unpacking package file. {0}")]
+    ArchiveError(#[from] zip::result::ZipError)
 }
 
 pub trait ContextAccessor<TState>
@@ -95,9 +85,9 @@ where TState: Display + Send + Clone + 'static {
 }
 
 #[async_trait]
-pub(crate) trait Workload<TState>
-where TState: Display + Send + Clone + 'static {
-    async fn run(&self) -> Result<(), WorkloadError>;
+pub(crate) trait Workload<TState> 
+where  TState: Display + Send + Clone + 'static {      
+    async fn run(&self) -> Result<(), WorkloadError>;           
 }
 
 #[async_trait]
@@ -119,14 +109,9 @@ where TState: Display + Send + Clone + 'static {
         let product = self.get_product();
 
         let xml_uri = format!("{}meta.xml", &product.repository);
-        let xml = self.get_text(&xml_uri).await
-            .change_context(RepositoryFetchError::NetworkError(format!("Failed to fetch repository for {}", &product.name)))
-            .attach_printable_lazy(|| format!("Failed to fetch repository for {}", &product.name))?;
+        let xml = self.get_text(&xml_uri).await?;
 
-        let repository: Repository = from_str(&xml)
-            .into_report()
-            .change_context(RepositoryFetchError::ParseError(format!("Failed to parse repository for {} from xml str", &product.name)))
-            .attach_printable_lazy(|| format!("Failed to parse repository for {} from xml str", &product.name))?;
+        let repository: Repository = from_str(&xml)?;
 
         log::info!("Fetched and parsed Repository structure for {}", product.name);
         Ok(repository)
@@ -135,34 +120,22 @@ where TState: Display + Send + Clone + 'static {
     async fn get_package(&self, package: &Package) -> Result<PackageFile, PackageDownloadError>{
         let product = self.get_product();
 
-        let mut file = tempfile::NamedTempFile::new()
-            .into_report()
-            .change_context(PackageDownloadError::IOError(format!("Failed to create temporary file")))
-            .attach_printable(format!("Failed to create temporary file"))?;
+        let mut file = tempfile::NamedTempFile::new()?;
 
-        let path_buff = file.as_file().path().into_report()
-            .change_context(PackageDownloadError::IOError(format!("Failed to accure file path from underlaying std::fs::File strct")))
-            .attach_printable(format!("Failed to accure file path from underlaying std::fs::File strct"))?;
+        let path_buff = file.as_file().path()?;
         let path = path_buff.to_str().unwrap().to_owned(); // its wt8 buffer. should never cause a problem
 
-        let file_download_result = self.get_file(&product.get_uri_to_package(&package), file.as_file_mut()).await;
+        let file_download_result = self.get_file(&product.get_uri_to_package(&package), file.as_file_mut()).await?;
 
-        match file_download_result {
-            Ok(()) => Ok(PackageFile { handle: file, package: package.clone() }),
-            
-            Err(err) => {
-                Err(err.change_context(PackageDownloadError::NetworkError(format!("Failed to transfer stream chunks into the file {}", path)))
-                    .attach_printable(format!("Failed to transfer stream chunks into the file {}", path)))
-            }
-        }
+        Ok(PackageFile { handle: file, package: package.clone() })
     }
 
     async fn install_package(&self, package: &Package, package_file: &PackageFile) -> Result<(), PackageInstallError> {
         let product = self.get_product();
         let progress_closure = self.create_progress_closure();
-        archiving::zip_read::extract_to(&package_file.handle.as_file(), product.get_path_to_package(package), &progress_closure)
-            .map_err(|e| PackageInstallError::from(e))
-            .into_report()
+        archiving::zip_read::extract_to(&package_file.handle.as_file(), product.get_path_to_package(package), &progress_closure)?;
+
+        Ok(())
     }
 
     async fn get_file(&self, url: &str, file: &mut std::fs::File) -> Result<(), HttpStreamError> {
@@ -180,6 +153,21 @@ where TState: Display + Send + Clone + 'static {
         Box::new(move |progress: f32| {
             arc.lock().state_progress = progress; 
         })
+    }
+
+    fn get_installition_summary(&self) -> Result<InstallitionSummary, WeakStructParseError> {
+        let path = std::env::current_dir().unwrap();
+        let struct_path = path.join(".instally.summary.xml");
+        let product = self.get_product();
+
+        let mut file = std::fs::File::open(struct_path)?;
+
+        let mut weak_struct = String::new();
+        file.read_to_string(&mut weak_struct)?;
+
+        let repository: InstallitionSummary = from_str(&weak_struct)?; 
+
+        Ok(repository)
     }
 }
 

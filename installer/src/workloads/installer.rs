@@ -1,13 +1,10 @@
 
 use std::{fmt::{Display, Formatter}};
 
-use super::abstraction::{Workload, WorkloadResult, Worker, ContextAccessor, WorkloadError};
-use crate::{InstallerApp, ContextArcT, archiving};
+use super::abstraction::{Workload, Worker, ContextAccessor, WorkloadError};
+use crate::{InstallerApp, ContextArcT};
 
-use error_stack::{ResultExt, Result, IntoReport};
-use filepath::FilePath;
 use serde::{Deserialize, Serialize};
-use serde_xml_rs::{from_str};
 use async_trait::async_trait;
 
 pub(crate) struct InstallerWrapper {
@@ -32,43 +29,45 @@ impl ContextAccessor<InstallerWorkloadState> for InstallerWrapper {
     }
 }
 
+#[deny(implied_bounds_entailment)]
 #[async_trait]
 impl Workload<InstallerWorkloadState> for InstallerWrapper {
     async fn run(&self) -> Result<(), WorkloadError> {
+
+        self.get_installition_summary()
+            .map_err(|err| WorkloadError::Other(err.to_string()))?;
+
         log::info!("Starting to install {}", &self.app.product.name);
 
         self.set_workload_state(InstallerWorkloadState::FetchingRemoteTree(self.app.product.name.clone()));
-        let repository = self.fetch_repository().await
-            .change_context(WorkloadError {})
-            .attach_printable(format!("Failed to retrieve Repository struct for {}", self.app.product.name))?;
         
+        let repository = self.fetch_repository().await
+            .map_err(|err| WorkloadError::Other(err.to_string()))?;
+
         std::fs::create_dir_all(&self.app.product.target_directory)
-            .into_report()
-            .change_context(WorkloadError { })
-            .attach_printable(format!("Failed to create path for product {}", self.app.product.name))?;
+            .map_err(|err| WorkloadError::Other(err.to_string()))?;
 
         for package in &repository.packages {
             log::info!("Downloading the package from {}", &self.app.product.get_uri_to_package(&package));
             self.set_workload_state(InstallerWorkloadState::DownloadingComponent(package.display_name.clone()));
-            let package_file = self.get_package(package).await
-                .change_context(WorkloadError {})
-                .attach_printable(format!("Failed to download package: {}, at {}", package.display_name, package.archive))?;
+
+            let package_file = self.get_package(&package).await
+                .map_err(|err| WorkloadError::Other(err.to_string()))?;
 
             log::info!("Decompression of {}", &package.display_name);
             self.set_workload_state(InstallerWorkloadState::InstallingComponent(package.display_name.clone()));
-            self.install_package(package, &package_file).await
-                .change_context(WorkloadError { })
-                .attach_printable(format!("Failed to install component {} from its package ({})", package.display_name, package.archive))?;
+
+            self.install_package(&package, &package_file).await
+                .map_err(|err| WorkloadError::Other(err.to_string()))?;
         }
 
-        self.set_workload_state(InstallerWorkloadState::Done);  
+        self.set_workload_state(InstallerWorkloadState::Done);
         Ok(())
     }
-    
 }
 
- #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
- #[serde(rename_all = "PascalCase")]
+#[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "PascalCase")]
 pub struct Product {
     pub name: String,
     pub publisher: String,
@@ -92,7 +91,6 @@ impl Product{
 #[serde(rename_all = "PascalCase")]
 pub struct Repository {
     pub application_name: String,
-    pub application_version: String,
     pub packages: Vec<Package>,
 }
 
@@ -111,6 +109,24 @@ pub struct Package {
 pub struct PackageFile {
     pub handle: tempfile::NamedTempFile,
     pub package: Package
+}
+
+#[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "PascalCase")]
+pub struct InstallitionSummary {
+    pub application_name: String,
+    pub packages: Vec<PackageInstallition>,
+}
+
+#[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "PascalCase")]
+pub struct PackageInstallition {
+    pub name: String,
+    pub display_name: String,
+    pub version: String,
+    pub installed_at: String,
+    pub updated_at: String,
+    pub default: bool
 }
 
 #[derive(Debug, Clone)]

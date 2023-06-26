@@ -51,9 +51,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 println!("Workload completed");
             },
             Err(err) => {
+                log::error!("\n{err:?}");
                 installer.set_result(WorkloadResult::Error(err.to_string()));
-                installer.set_workload_state(InstallerWorkloadState::Interrupted("Failed due to an error".to_owned()));
-                log::error!("\n{err:?}")
+                installer.set_workload_state(InstallerWorkloadState::Interrupted(err.to_string()));
             }
         }
 

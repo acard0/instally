@@ -1,27 +1,27 @@
-use error_stack::{IntoReport, ResultExt, Context, Result, Report};
+
 use futures::StreamExt;
-use std::{fs::File, cmp::min, fmt, io::Write};
+use std::{fs::File, cmp::min, io::Write};
 use bytes::Bytes;
 
-#[derive(Debug)]
+#[derive(thiserror::Error, Debug)]
 pub enum HttpStreamError {
-    NetworkError(String),
-    ChunkProcessError(String)
+    #[error("A network error accured. {0}")]
+    NetworkError(#[from] reqwest::Error),
+
+    #[error("Did not receive content length.")]
+    ContentLengthError,
+
+    #[error("Failed to pull stream chunk into file. {0}")]
+    PullToFileError(#[from] std::io::Error),
+
+    #[error("Failed to pull stream chunk into utf8 string. {0}")]
+    PullToStringError(#[from] std::string::FromUtf8Error)
 }
-impl fmt::Display for HttpStreamError {
-    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
-        fmt.write_str("Failed to complete the http request")
-    }
-}
-impl Context for HttpStreamError {}
 
 pub async fn test() -> Result<String, HttpStreamError> {
-    let resp = reqwest::get("http://www.gstatic.com/generate_204").await
-        .into_report()
-        .change_context(HttpStreamError::NetworkError("Failed to fetch http://www.gstatic.com/generate_204".to_owned()))?
-        .text().await
-        .into_report()
-        .change_context(HttpStreamError::ChunkProcessError("Failed to read stream at http://www.gstatic.com/generate_204".to_owned()))?;
+    let resp = reqwest::get("http://www.gstatic.com/generate_204")
+        .await?
+        .text().await?;
 
     Ok(resp)
 }
@@ -39,24 +39,18 @@ where
     let response = reqwest::Client::new()
         .get(url)
         .send()
-        .await
-        .into_report()
-        .change_context(HttpStreamError::NetworkError(format!("Failed to fetch {}", url)))?;
+        .await?;
 
     let total_size = match response.content_length() {
         Some(r) => r,
-        _ => Err(Report::new(HttpStreamError::ChunkProcessError(format!("Failed to read content length at {}", url))))
-            .attach_printable(format!("Failed to resolve content size for {}", url))?
+        _ => Err(HttpStreamError::ContentLengthError)?
     };
 
     let mut downloaded: u64 = 0;
     let mut stream = response.bytes_stream();
 
     while let Some(item) = stream.next().await {
-        let chunk = item
-            .into_report()
-            .change_context(HttpStreamError::ChunkProcessError("Failed to read chunk from the stream".to_owned()))
-            .attach_printable("Failed to read chunk from the stream")?;
+        let chunk = item?;
 
         process_chunk(chunk.clone())?;
 
@@ -74,10 +68,7 @@ where
 {
     download(url, progress_callback, move |chunk| {
         file.write_all(&chunk).or_else(|err| {
-            let str = format!("Failed to write stream chunk to the file.");
-            let report = Report::from(HttpStreamError::ChunkProcessError(str.clone()))
-                .attach_printable(str.clone());
-            Err(report)
+            Err(HttpStreamError::PullToFileError(err))?
         })
     }).await
 }
@@ -90,21 +81,9 @@ where
     let result_ref = &mut result_string;
 
     download(url, progress_callback, move |chunk| {
-        let chunk_result = String::from_utf8(chunk.to_vec()).into_report();
-
-        match chunk_result {
-            Ok(chunk_str) => {
-                result_ref.push_str(&chunk_str);
-                Ok(())
-            }
-            Err(_) => {
-                let str = "Failed to parse byte chunk into string".to_owned();
-                chunk_result
-                    .change_context(HttpStreamError::ChunkProcessError(str.clone()))
-                    .attach_printable(str.clone())
-                    .map(|s| ())
-            }
-        }
+        let chunk_str = String::from_utf8(chunk.to_vec())?;
+        result_ref.push_str(&chunk_str);
+        Ok(())
     }).await?;
 
     Ok(result_string)
