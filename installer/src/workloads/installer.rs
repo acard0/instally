@@ -1,7 +1,7 @@
 
 use std::{fmt::{Display, Formatter}};
 
-use super::abstraction::{Workload, Worker, ContextAccessor, WorkloadError};
+use super::{abstraction::{Workload, Worker, ContextAccessor}, errors::WorkloadError};
 use crate::{InstallerApp, ContextArcT};
 
 use serde::{Deserialize, Serialize};
