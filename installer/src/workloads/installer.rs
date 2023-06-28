@@ -9,11 +9,20 @@ use async_trait::async_trait;
 
 pub(crate) struct InstallerWrapper {
     app: InstallerApp,
+    opts: InstallerOptions
+}
+
+pub(crate) struct InstallerOptions {
+    pub target_packages: Option<Vec<Package>>
 }
 
 impl InstallerWrapper {
-    pub fn new(appx: InstallerApp) -> Self {
-        InstallerWrapper { app: appx }
+    pub fn new(app: InstallerApp) -> Self {
+        InstallerWrapper { app, opts: InstallerOptions { target_packages: None } }
+    }
+
+    pub fn new_with_opts(app: InstallerApp, opts: InstallerOptions) -> Self {
+        InstallerWrapper { app, opts: opts }
     }
 }
 
@@ -41,7 +50,15 @@ impl Workload<InstallerWorkloadState> for InstallerWrapper {
         std::fs::create_dir_all(&self.app.product.target_directory)
             .map_err(|err| WorkloadError::Other(err.to_string()))?;
 
-        for package in &repository.packages {
+        let targets = match &self.opts.target_packages {
+            None => repository.packages,
+            Some(t) => t.to_vec()
+        };
+
+        log::info!("Packages in installition queue: {}", targets.iter().map(|e| e.display_name.clone()).collect::<Vec<_>>().join(", "));
+
+        for package in targets {
+
             log::info!("Starting to install {}, version: {}.", package.display_name, package.version);
             log::info!("Downloading the package file from {}", &self.app.product.get_uri_to_package(&package));
             self.set_workload_state(InstallerWorkloadState::DownloadingComponent(package.display_name.clone()));
@@ -54,6 +71,7 @@ impl Workload<InstallerWorkloadState> for InstallerWrapper {
 
             self.install_package(&package, &package_file).await
                 .map_err(|err| WorkloadError::Other(err.to_string()))?;
+
         }
 
         self.set_workload_state(InstallerWorkloadState::Done);

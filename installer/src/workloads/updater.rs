@@ -11,13 +11,22 @@ struct PackagePair {
     remote: Package
 }
 
+pub struct UpdaterOptions {
+    pub target_packages: Option<Vec<PackageInstallition>>,
+}
+
 pub(crate) struct UpdaterAppWrapper {
     app: UpdaterApp,
+    opts: UpdaterOptions,
 }
 
 impl UpdaterAppWrapper {
-    pub fn new(appx: UpdaterApp) -> Self {
-        UpdaterAppWrapper { app: appx }
+    pub fn new(app: UpdaterApp) -> Self {
+        UpdaterAppWrapper { app, opts: UpdaterOptions { target_packages: None } }
+    }
+
+    pub fn new_with_opts(app: UpdaterApp, opts: UpdaterOptions) -> Self {
+        UpdaterAppWrapper { app, opts: opts }
     }
 }
 
@@ -35,6 +44,7 @@ impl ContextAccessor<UpdaterWorkloadState> for UpdaterAppWrapper {
 
 #[async_trait]
 impl Workload<UpdaterWorkloadState> for UpdaterAppWrapper {
+
     async fn run(&self) -> Result<(), WorkloadError> {
         let summary = self.get_installition_summary()
             .map_err(|err| WorkloadError::Other(err.to_string()))?;
@@ -55,13 +65,15 @@ impl Workload<UpdaterWorkloadState> for UpdaterAppWrapper {
                         updates.push( PackagePair { local: local.clone(), remote: remote.clone() } );
                     }
                 }
-                None => { /* ... */ }
+                None => { 
+                    // package is not installed on local
+                }
             }
         }
 
         log::info!("Starting to update {}", &self.app.product.name);
         log::info!("Installed packages: {}", summary.packages.iter().map(|e| e.display_name.clone()).collect::<Vec<_>>().join(", "));
-        log::info!("Packages that will be updated: {}", updates.iter().map(|e| e.local.display_name.clone()).collect::<Vec<_>>().join(", "));
+        log::info!("Packages that are outdated: {}", updates.iter().map(|e| e.local.display_name.clone()).collect::<Vec<_>>().join(", "));
 
         std::fs::create_dir_all(&self.app.product.target_directory)
             .map_err(|err| WorkloadError::Other(err.to_string()))?;
@@ -69,6 +81,14 @@ impl Workload<UpdaterWorkloadState> for UpdaterAppWrapper {
         for pair in updates {
             let local = pair.local;
             let remote = pair.remote;
+            
+            // check if package is opted-out specifically via start args
+            if let Some(targets) = &self.opts.target_packages {
+                if !targets.iter().any(|f| &f.name == &local.name) {
+                    log::info!("Skipping update of {} as it's not listed in target package list. Installed: {}, New: {}.", local.display_name, local.version, remote.version);
+                    continue;
+                }
+            }
 
             log::info!("Starting to update {}, installed: {}, new: {}.", local.display_name, local.version, remote.version);
             log::info!("Downloading the package file from {}", &self.app.product.get_uri_to_package(&remote));

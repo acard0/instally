@@ -1,19 +1,28 @@
-use std::{fmt::{Formatter, Display}};
+use std::{fmt::{Formatter, Display}, cell::RefCell};
 
 use async_trait::async_trait;
 
 use crate::{ContextArcT, UninstallerApp};
 
-use super::{abstraction::{ContextAccessor, Worker, Workload}, installer::Product, errors::WorkloadError};
+use super::{abstraction::{ContextAccessor, Worker, Workload}, installer::{Product, PackageInstallition}, errors::WorkloadError};
 
 
 pub(crate) struct UninstallerWrapper {
     app: UninstallerApp,
+    opts: UninstallerOptions
+}
+
+pub(crate) struct UninstallerOptions {
+    pub target_packages: Option<Vec<PackageInstallition>>,
 }
 
 impl UninstallerWrapper {
-    pub fn new(appx: UninstallerApp) -> Self {
-        UninstallerWrapper { app: appx }
+    pub fn new(app: UninstallerApp) -> Self {
+        UninstallerWrapper { app, opts: UninstallerOptions { target_packages: None } }
+    }
+
+    pub fn new_with_opts(app: UninstallerApp, opts: UninstallerOptions) -> Self {
+        UninstallerWrapper { app,  opts}
     }
 }
 
@@ -29,17 +38,33 @@ impl ContextAccessor<UninstallerWorkloadState> for UninstallerWrapper {
     }
 }
 
-#[async_trait]
+#[async_trait] 
 impl Workload<UninstallerWorkloadState> for UninstallerWrapper {
     async fn run(&self) -> Result<(), WorkloadError> {
-        let mut summary = self.get_installition_summary()
-            .map_err(|err| WorkloadError::Other(err.to_string()))?;
-        
+        let summary_cell = RefCell::new(self.get_installition_summary()
+            .map_err(|err| WorkloadError::Other(err.to_string()))?
+        );  
+
+        // sandwich borrow?
+        let summary = summary_cell.borrow_mut(); 
+        let targets = match &self.opts.target_packages {
+            Some(opted) => {
+                opted
+            }
+            None => {
+                &summary.packages
+            }
+        }; 
+        let mut summary = summary_cell.borrow_mut(); 
+
         log::info!("Installed packages: {}", summary.packages.iter().map(|e| e.display_name.clone()).collect::<Vec<_>>().join(", ")); 
+        log::info!("Packages that will be removed: {}", targets.iter().map(|e| e.display_name.clone()).collect::<Vec<_>>().join(", ")); 
         
         let mut all_done = true;
-        for package in summary.clone().packages.into_iter() {
+        for package in targets {
+
             log::info!("Starting to delete {} package", package.display_name);
+            
             package.files.iter().into_iter().for_each(|file| {
                 if let Err(err) = std::fs::remove_file(file.clone()) {
                     log::error!("Failed to delete {:?}. It's included inside {} package. Trace: {}", file.clone(), package.display_name, err);
