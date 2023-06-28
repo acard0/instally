@@ -141,13 +141,13 @@ impl InstallitionSummary {
             Ok(f) => f,
             Err(err) =>  {
                 log::info!("Failed to open installition summary file. Creating new one. Trace: {}", err);
-                std::fs::File::create(struct_path.clone())?
+                std::fs::File::options().create(true).read(true)
+                    .write(true).open(struct_path.clone())?
             }
         };
 
         let mut weak_struct = String::new();
-        file.read_to_string(&mut weak_struct)
-            .map_err(|e| WeakStructParseError::ReadError(struct_path.clone().to_str().unwrap().to_string()))?;
+        file.read_to_string(&mut weak_struct)?;
 
         let inner: InstallitionSummaryInner = match quick_xml::de::from_str(&weak_struct) {
             Ok(r) => r,

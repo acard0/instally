@@ -20,10 +20,7 @@ pub enum WeakStructParseError {
 
     #[error("IO Error accured while pulling weak structure from file. {0}")]
     IOError(#[from] std::io::Error),
-
-    #[error("Failed to read weak struct from file. Path: {0}")]
-    ReadError(String),
-
+    
     #[error("An error accured while parsing weak structure from file. {0}")]
     ParseError(#[from] quick_xml::DeError)
 }
