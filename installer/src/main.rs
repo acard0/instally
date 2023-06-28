@@ -8,6 +8,7 @@ mod http;
 mod app;
 mod workloads;
 mod archiving;
+mod helpers;
 
 use crate::{app::AppWrapper, workloads::abstraction::Worker};
 
@@ -15,25 +16,33 @@ use std::{sync::{Arc}};
 
 use eframe::{egui};
 use parking_lot::{Mutex};
-use workloads::{installer::{InstallerWorkloadState, InstallerWrapper, Product}, abstraction::{InstallyApp, Workload, AppContext, WorkloadResult}};
+use workloads::{installer::*, abstraction::*, uninstaller::*, updater::{UpdaterWorkloadState, UpdaterAppWrapper}};
 
 pub type InstallerContext = AppContext<InstallerWorkloadState>;
 pub type InstallerApp = InstallyApp<InstallerWorkloadState>;
+
+pub type UninstallerContext = AppContext<UninstallerWorkloadState>;
+pub type UninstallerApp = InstallyApp<UninstallerWorkloadState>;
+
+pub type UpdaterContext = AppContext<UpdaterWorkloadState>;
+pub type UpdaterApp = InstallyApp<UpdaterWorkloadState>;
 
 pub type ContextArcT<T> = Arc<Mutex<AppContext<T>>>;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let rust_log = std::env::var("RUST_LOG").unwrap_or("info".into()); 
+    std::env::set_var("RUST_LOG", rust_log);  
     env_logger::init();
 
     // create app state holder that is thread-safe
     let app = Box::leak(Box::new(|| {
-        InstallerApp::new(Product { // prototype 'Product' structure
+        UpdaterApp::new(Product { // prototype 'Product' structure
             name: "Tutucu".to_owned(),
             publisher: "liteware".to_owned(),
             product_url: "https://liteware.io".to_owned(),
             control_script: "none".to_owned(),
-            target_directory: "%appdata%\\liteware.io\\tutucu\\".to_owned(),
+            target_directory: "C:\\Users\\doquk\\AppData\\Roaming\\liteware.io\\Tutucu".to_owned(),
             repository: "https://cdn.liteware.xyz/instally/tutucu/release/".to_owned()
         })
     }))();
@@ -41,6 +50,49 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // spawn worker thread
     let clone_worker = app.clone();
     tokio::spawn(async move {
+
+
+
+let updater = UpdaterAppWrapper::new(clone_worker); 
+let workload_result = updater.run().await;
+
+match workload_result {
+    Ok(()) => {
+        updater.set_result(WorkloadResult::Ok);
+        updater.set_workload_state(UpdaterWorkloadState::Done);
+        println!("Workload completed");
+    },
+    Err(err) => {
+        log::error!("\n{err:?}");
+        updater.set_result(WorkloadResult::Error(err.to_string()));
+        updater.set_workload_state(UpdaterWorkloadState::Interrupted(err.to_string()));
+    }
+}
+
+ 
+
+/*
+
+let uninstaller = UninstallerWrapper::new(clone_worker); 
+let workload_result = uninstaller.run().await;
+
+match workload_result {
+    Ok(()) => {
+        uninstaller.set_result(WorkloadResult::Ok);
+        uninstaller.set_workload_state(UninstallerWorkloadState::Done);
+        println!("Workload completed");
+    },
+    Err(err) => {
+        log::error!("\n{err:?}");
+        uninstaller.set_result(WorkloadResult::Error(err.to_string()));
+        uninstaller.set_workload_state(UninstallerWorkloadState::Interrupted(err.to_string()));
+    }
+}
+
+ */
+        
+        /* 
+        
         let installer = InstallerWrapper::new(clone_worker); 
         let workload_result = installer.run().await;
 
@@ -56,6 +108,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 installer.set_workload_state(InstallerWorkloadState::Interrupted(err.to_string()));
             }
         }
+        
+         */
 
     });
 

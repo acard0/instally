@@ -1,7 +1,5 @@
 use crate::http::client::HttpStreamError;
 
-
-
 #[derive(thiserror::Error, Debug)]
 pub enum WorkloadError {
     #[error("{0}")]
@@ -14,7 +12,7 @@ pub enum RepositoryFetchError {
     NetworkError(#[from] HttpStreamError),
 
     #[error("A error accured while parsing remote repository structure. {0}")]
-    ParseError(#[from] serde_xml_rs::Error),
+    ParseError(#[from] quick_xml::DeError),
 }
 
 #[derive(thiserror::Error, Debug)]
@@ -23,8 +21,11 @@ pub enum WeakStructParseError {
     #[error("IO Error accured while pulling weak structure from file. {0}")]
     IOError(#[from] std::io::Error),
 
+    #[error("Failed to read weak struct from file. Path: {0}")]
+    ReadError(String),
+
     #[error("An error accured while parsing weak structure from file. {0}")]
-    ParseError(#[from] serde_xml_rs::Error)
+    ParseError(#[from] quick_xml::DeError)
 }
 
 #[derive(thiserror::Error, Debug)]
@@ -44,5 +45,21 @@ pub enum PackageInstallError {
     IOError(#[from] std::io::Error),
 
     #[error("An error accured while unpacking package file. {0}")]
-    ArchiveError(#[from] zip::result::ZipError)
+    ArchiveError(#[from] zip::result::ZipError),
+
+    #[error("An error accured while accessing to installition summary file. {0}")]
+    SummaryIOError(#[from] WeakStructParseError)
+}
+
+#[derive(thiserror::Error, Debug)]
+pub enum PackageUninstallError {
+
+    #[error("Package is not installed.")]
+    InstallitionNotFound,
+
+    #[error("An error accured while removing files. {0}")]
+    IOError(#[from] std::io::Error),
+
+    #[error("An error accured while accessing to installition summary file. {0}")]
+    SummaryIOError(#[from] WeakStructParseError)
 }

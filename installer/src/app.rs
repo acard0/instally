@@ -22,7 +22,7 @@ where TState: Display + Send + Clone + 'static {
         let binding = self.app.context.clone();
         let mut app = binding.lock();
 
-        custom_window_frame(ctx, frame, format!("instally {}", app.frame_count).as_ref(), |ui| {
+        custom_window_frame(ctx, frame, format!("instally - {}", self.app.product.name).as_ref(), |ui| {
             
             ui.add_space(15.0);
 
@@ -100,8 +100,8 @@ fn custom_window_frame(
             );
 
             // Paint the title:
-            painter.text(
-                rect.center_top() + vec2(0.0, height / 2.0),
+            let _ = painter.text(
+                rect.center_top() + vec2(0.0, height + 5.0 / 2.0),
                 Align2::CENTER_CENTER,
                 title,
                 FontId::proportional(height * 0.8),
@@ -123,10 +123,11 @@ fn custom_window_frame(
             // Add the contents:
             let content_rect = {
                 let mut rect = rect;
-                rect.min.y = title_bar_rect.max.y;
+                rect.min.y = title_bar_rect.max.y + 10.0;
                 rect
             }
             .shrink(5.0);
+
             let mut content_ui = ui.child_ui(content_rect, *ui.layout());
             add_contents(&mut content_ui);
         });

@@ -1,10 +1,9 @@
 
-use std::{fmt::{Display}, sync::Arc, io::Read};
+use std::{fmt::{Display}, sync::Arc};
 use async_trait::async_trait;
 
 use filepath::FilePath;
 use parking_lot::{Mutex};
-use serde_xml_rs::from_str;
 
 use crate::{http::{client::{self, HttpStreamError}}, archiving};
 
@@ -66,7 +65,7 @@ where TState: Display + Send + Clone + 'static {
         let xml_uri = format!("{}meta.xml", &product.repository);
         let xml = self.get_text(&xml_uri).await?;
 
-        let repository: Repository = from_str(&xml)?;
+        let repository: Repository = quick_xml::de::from_str(&xml)?;
 
         log::info!("Fetched and parsed Repository structure for {}", product.name);
         Ok(repository)
@@ -86,9 +85,14 @@ where TState: Display + Send + Clone + 'static {
     }
 
     async fn install_package(&self, package: &Package, package_file: &PackageFile) -> Result<(), PackageInstallError> {
+
         let product = self.get_product();
         let progress_closure = self.create_progress_closure();
-        archiving::zip_read::extract_to(&package_file.handle.as_file(), product.get_path_to_package(package), &progress_closure)?;
+        let files = archiving::zip_read::extract_to(&package_file.handle.as_file(), product.get_path_to_package(package), &progress_closure)?;
+        
+        self.get_installition_summary()?
+            .installed(package.clone(), files)
+            .save()?;
 
         Ok(())
     }
@@ -111,18 +115,7 @@ where TState: Display + Send + Clone + 'static {
     }
 
     fn get_installition_summary(&self) -> Result<InstallitionSummary, WeakStructParseError> {
-        let path = std::env::current_dir().unwrap();
-        let struct_path = path.join(".instally.summary.xml");
-        let product = self.get_product();
-
-        let mut file = std::fs::File::open(struct_path)?;
-
-        let mut weak_struct = String::new();
-        file.read_to_string(&mut weak_struct)?;
-
-        let repository: InstallitionSummary = from_str(&weak_struct)?; 
-
-        Ok(repository)
+        InstallitionSummary::read_or_create(&std::path::PathBuf::from(self.get_product().target_directory))
     }
 }
 
