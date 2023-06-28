@@ -216,11 +216,6 @@ impl InstallitionSummary {
         let mut xml = xml_decl.to_vec();
         xml.extend(xml_str.as_bytes());
 
-        log::trace!("");
-        log::trace!("New weak struct state:");
-        log::trace!("{:?}", std::str::from_utf8(&xml));
-        log::trace!("");
-
         self.file.set_len(0)?;
         self.file.rewind()?;
         self.file.write_all(&xml)?;
