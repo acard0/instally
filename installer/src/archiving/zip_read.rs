@@ -1,9 +1,9 @@
 use std::{io, path, fs};
 
-
-pub fn extract_to<F>(input: &fs::File, output: &path::Path, progress_callback: &F) -> Result<(), zip::result::ZipError> 
+pub fn extract_to<F>(input: &fs::File, output: &path::Path, progress_callback: &F) -> Result<Vec<std::path::PathBuf>, zip::result::ZipError> 
 where F: Fn(f32)
 {
+    let mut paths = vec![];
     let mut archive = zip::ZipArchive::new(input)?;
     let length = archive.len();
 
@@ -15,10 +15,10 @@ where F: Fn(f32)
         };
 
         if (*file.name()).ends_with('/') {
-            log::info!("Archive: file {} extracted to \"{}\"", i, outpath.display());
+            log::trace!("Archive: file {} extracted to \"{}\"", i, outpath.display());
             fs::create_dir_all(&outpath)?;
         } else {
-            log::info!(
+            log::trace!(
                 "Archive: file {} extracted to \"{}\" ({} bytes)",
                 i,
                 outpath.display(),
@@ -31,6 +31,8 @@ where F: Fn(f32)
             }
             let mut outfile = fs::File::create(&outpath)?;
             io::copy(&mut file, &mut outfile)?;
+
+            paths.push(outpath);
         }
 
         // Get and Set permissions
@@ -47,5 +49,5 @@ where F: Fn(f32)
         progress_callback(progress);
     }
 
-    Ok(())
+    Ok(paths)
 }
