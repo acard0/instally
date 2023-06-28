@@ -1,7 +1,7 @@
 use std::{process, fmt::Display};
 
 use egui::{ProgressBar};
-use crate::{workloads::abstraction::{InstallyApp, ContextAccessor}, ContextArcT};
+use crate::{workloads::abstraction::{InstallyApp}};
 
 pub struct AppWrapper<TState> 
 where TState: Display + Send + Clone + 'static {
