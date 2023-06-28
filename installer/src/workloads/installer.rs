@@ -125,7 +125,7 @@ pub struct PackageFile {
 }
 
 pub struct InstallitionSummary {
-    file: std::fs::File,
+    path: std::path::PathBuf,
     inner: InstallitionSummaryInner
 }
 
@@ -178,7 +178,7 @@ impl InstallitionSummary {
             }
         }; 
 
-        Ok(InstallitionSummary { file, inner })
+        Ok(InstallitionSummary { path: struct_path, inner })
     }
 
     pub fn installed(&mut self, package: Package, files: Vec<std::path::PathBuf>) -> &mut Self {
@@ -234,9 +234,12 @@ impl InstallitionSummary {
         let mut xml = xml_decl.to_vec();
         xml.extend(xml_str.as_bytes());
 
-        self.file.set_len(0)?;
-        self.file.rewind()?;
-        self.file.write_all(&xml)?;
+        let mut file = std::fs::File::options().create(true).read(true)
+            .write(true).open(self.path.clone())?;
+
+        file.set_len(0)?;
+        file.rewind()?;
+        file.write_all(&xml)?;
 
         Ok(self)
     }
