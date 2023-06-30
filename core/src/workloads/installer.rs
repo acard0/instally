@@ -204,6 +204,11 @@ impl InstallitionSummary {
         Ok(InstallitionSummary { path: struct_path, inner })
     }
 
+    pub fn find(&self, package: &Package) -> Option<PackageInstallition> {
+        self.packages.iter().find(|n| n.name == package.name)
+        .map(|f| f.clone())
+    }
+    
     pub async fn cross_check(&self, packages: &[Package]) -> Result<CrossCheckSummary, RepositoryCrossCheckError> {
         let summary = Self::read_or_create(&std::path::Path::new("").to_path_buf())?;
 
@@ -230,6 +235,14 @@ impl InstallitionSummary {
             updates
         })
     }
+    
+    pub fn packages(&self) -> &[PackageInstallition] {
+        &self.packages
+    }
+    
+    pub fn packages_mut(&mut self) -> &mut [PackageInstallition] {
+        &mut self.packages
+    } 
     pub fn installed(&mut self, package: Package, files: Vec<std::path::PathBuf>) -> &mut Self {
         //TODO: inspect
         if self.packages.iter().any(|n| n.name == package.name){
