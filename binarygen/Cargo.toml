@@ -1,5 +1,5 @@
 [package]
-name = "binarygen"
+name = "instally-bingen"
 version = "0.1.0"
 edition = "2021"
 
@@ -9,9 +9,3 @@ edition = "2021"
 serde = { version = "1.0.164", features = ["derive"] }
 quick-xml = { version = "0.29.0", features = ["serialize"] }
 patternscan = "1.2.0"
-
-[profile.release]
-strip = true  # Automatically strip symbols from the binary.
-opt-level = "z"  # Optimize for size.
-lto = true # Enable Link Time Optimization (LTO)
-codegen-units = 1 # Reduce Parallel Code Generation Units to Increase Optimization
