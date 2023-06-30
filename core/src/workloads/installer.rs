@@ -95,6 +95,17 @@ pub struct Product {
 }
 
 impl Product{
+    pub fn read() -> Result<Product, WeakStructParseError> {
+        let mut file = std::fs::OpenOptions::new()
+            .read(true).open("product.xml")?;
+
+        let mut xml = String::new();
+
+        file.read_to_string(&mut xml)?;
+        let product: Product = quick_xml::de::from_str(&xml)?;
+
+        Ok(product)
+    }
     pub fn get_path_to_package(&self, _package: &Package) -> &std::path::Path {
         std::path::Path::new(&self.target_directory)
     }
