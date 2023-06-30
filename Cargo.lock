@@ -164,10 +164,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "api"
-version = "0.1.0"
-
-[[package]]
 name = "arboard"
 version = "3.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -375,15 +371,6 @@ name = "base64ct"
 version = "1.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8c3c1a368f70d6cf7302d78f8f7093da241fb8e8807c05cc9e51a125895a6d5b"
-
-[[package]]
-name = "binarygen"
-version = "0.1.0"
-dependencies = [
- "patternscan",
- "quick-xml",
- "serde",
-]
 
 [[package]]
 name = "bitflags"
@@ -1470,7 +1457,23 @@ dependencies = [
 ]
 
 [[package]]
-name = "instally"
+name = "instally-api"
+version = "0.1.0"
+dependencies = [
+ "instally-core",
+]
+
+[[package]]
+name = "instally-bingen"
+version = "0.1.0"
+dependencies = [
+ "patternscan",
+ "quick-xml",
+ "serde",
+]
+
+[[package]]
+name = "instally-core"
 version = "0.1.0"
 dependencies = [
  "async-trait",
@@ -1494,6 +1497,21 @@ dependencies = [
  "tokio",
  "walkdir",
  "zip",
+]
+
+[[package]]
+name = "instally-scaffold"
+version = "0.1.0"
+dependencies = [
+ "catppuccin-egui",
+ "eframe",
+ "egui",
+ "env_logger",
+ "instally-core",
+ "log",
+ "quick-xml",
+ "serde",
+ "tokio",
 ]
 
 [[package]]

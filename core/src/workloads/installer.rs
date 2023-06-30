@@ -1,19 +1,20 @@
 
 use std::{fmt::{Display, Formatter}, ops::{Deref, DerefMut}, io::{Read, Write, Seek}, path::PathBuf};
 
-use super::{abstraction::{Workload, Worker, ContextAccessor}, errors::{WorkloadError, WeakStructParseError, PackageUninstallError}};
-use crate::{InstallerApp, ContextArcT};
+use crate::workloads::errors::WorkloadError;
+
+use super::{abstraction::{Worker, ContextAccessor, InstallerApp, ContextArcT, Workload}, errors::{WeakStructParseError, PackageUninstallError}};
 
 use serde::{Deserialize, Serialize};
 use async_trait::async_trait;
 
-pub(crate) struct InstallerWrapper {
-    app: InstallerApp,
-    opts: InstallerOptions
+pub struct InstallerOptions {
+    pub target_packages: Option<Vec<Package>>
 }
 
-pub(crate) struct InstallerOptions {
-    pub target_packages: Option<Vec<Package>>
+pub struct InstallerWrapper {
+    app: InstallerApp,
+    opts: InstallerOptions
 }
 
 impl InstallerWrapper {
@@ -49,6 +50,9 @@ impl Workload<InstallerWorkloadState> for InstallerWrapper {
 
         std::fs::create_dir_all(&self.app.product.target_directory)
             .map_err(|err| WorkloadError::Other(err.to_string()))?;
+
+        self.get_product().dump()
+            .map_err(|e| WorkloadError::Other(e.to_string()))?;
 
         let targets = match &self.opts.target_packages {
             None => repository.packages,
@@ -91,12 +95,31 @@ pub struct Product {
 }
 
 impl Product{
-    pub fn get_path_to_package(&self, package: &Package) -> &std::path::Path {
+    pub fn get_path_to_package(&self, _package: &Package) -> &std::path::Path {
         std::path::Path::new(&self.target_directory)
     }
 
     pub fn get_uri_to_package(&self, package: &Package) -> String {
-        format!("{}packages/{}", self.repository, package.archive)
+        format!("{}packages\\{}", self.repository, package.archive)
+    }
+
+    pub fn get_path_to_self_struct(&self) -> std::path::PathBuf {
+        std::path::Path::new(&self.target_directory).join("product.xml")
+    }
+
+    pub fn dump(&self) -> Result<(), WeakStructParseError> {
+        let payload = quick_xml::se::to_string(&self)?;
+
+        let mut file = std::fs::OpenOptions::new().create(true).write(true).
+            read(true).truncate(true).open(&self.get_path_to_self_struct())?;
+
+        let xml_decl = b"<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\" ?>\n";
+        let mut xml = xml_decl.to_vec();
+        xml.extend(payload.as_bytes());
+
+        file.write_all(&xml)?;
+
+        Ok(())
     }
 }
 

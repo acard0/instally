@@ -1,8 +1,9 @@
 
 use std::{fmt::{Display, Formatter}, cmp::Ordering};
 
+use crate::helpers::versioning::version_compare;
+
 use super::{abstraction::*, errors::*, installer::{Product, PackageInstallition, Package}};
-use crate::{ContextArcT, UpdaterApp, helpers::versioning::version_compare};
 
 use async_trait::async_trait;
 
@@ -15,7 +16,7 @@ pub struct UpdaterOptions {
     pub target_packages: Option<Vec<PackageInstallition>>,
 }
 
-pub(crate) struct UpdaterAppWrapper {
+pub struct UpdaterAppWrapper {
     app: UpdaterApp,
     opts: UpdaterOptions,
 }

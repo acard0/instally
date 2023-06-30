@@ -2,17 +2,15 @@ use std::{fmt::{Formatter, Display}, cell::RefCell};
 
 use async_trait::async_trait;
 
-use crate::{ContextArcT, UninstallerApp};
-
-use super::{abstraction::{ContextAccessor, Worker, Workload}, installer::{Product, PackageInstallition}, errors::WorkloadError};
+use super::{abstraction::{ContextAccessor, Worker, Workload, UninstallerApp, ContextArcT}, installer::{Product, PackageInstallition}, errors::WorkloadError};
 
 
-pub(crate) struct UninstallerWrapper {
+pub struct UninstallerWrapper {
     app: UninstallerApp,
     opts: UninstallerOptions
 }
 
-pub(crate) struct UninstallerOptions {
+pub struct UninstallerOptions {
     pub target_packages: Option<Vec<PackageInstallition>>,
 }
 

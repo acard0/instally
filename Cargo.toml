@@ -1,9 +1,10 @@
 
-
 [workspace]
+members = ["api", "core", "scaffold", "binarygen"] 
 
-members = [
-    "installer",
-    "api",
-    "binarygen",
-]
+[profile.release]
+strip = true  # Automatically strip symbols from the binary.
+opt-level = "z"  # Optimize for size.
+lto = true # Enable Link Time Optimization (LTO)
+codegen-units = 1 # Reduce Parallel Code Generation Units to Increase Optimization
+panic = "abort" # Smaller panic implementation

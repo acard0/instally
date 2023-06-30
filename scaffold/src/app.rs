@@ -1,7 +1,7 @@
 use std::{process, fmt::Display};
 
 use egui::{ProgressBar};
-use crate::{workloads::abstraction::{InstallyApp}};
+use instally_core::{workloads::abstraction::{InstallyApp}};
 
 pub struct AppWrapper<TState> 
 where TState: Display + Send + Clone + 'static {
@@ -126,7 +126,7 @@ fn custom_window_frame(
                 rect.min.y = title_bar_rect.max.y + 10.0;
                 rect
             }
-            .shrink(5.0);
+            .shrink2(emath::vec2(10.0, 10.0));
 
             let mut content_ui = ui.child_ui(content_rect, *ui.layout());
             add_contents(&mut content_ui);

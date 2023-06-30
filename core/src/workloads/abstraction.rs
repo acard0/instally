@@ -2,12 +2,22 @@
 use std::{fmt::{Display}, sync::Arc};
 use async_trait::async_trait;
 
-use filepath::FilePath;
 use parking_lot::{Mutex};
 
 use crate::{http::{client::{self, HttpStreamError}}, archiving};
 
-use super::{installer::{Product, Repository, Package, PackageFile, InstallitionSummary}, errors::*};
+use super::{installer::{Product, Repository, Package, PackageFile, InstallitionSummary, InstallerWorkloadState}, errors::*, uninstaller::UninstallerWorkloadState, updater::UpdaterWorkloadState};
+
+pub type InstallerContext = AppContext<InstallerWorkloadState>;
+pub type InstallerApp = InstallyApp<InstallerWorkloadState>;
+
+pub type UninstallerContext = AppContext<UninstallerWorkloadState>;
+pub type UninstallerApp = InstallyApp<UninstallerWorkloadState>;
+
+pub type UpdaterContext = AppContext<UpdaterWorkloadState>;
+pub type UpdaterApp = InstallyApp<UpdaterWorkloadState>;
+
+pub type ContextArcT<T> = Arc<Mutex<AppContext<T>>>;
 
 #[derive(Clone)]
 pub enum WorkloadResult {
@@ -39,13 +49,13 @@ where TState: Display + Send + Clone + 'static {
 }
 
 #[async_trait]
-pub(crate) trait Workload<TState> 
+pub trait Workload<TState> 
 where  TState: Display + Send + Clone + 'static {      
     async fn run(&self) -> Result<(), WorkloadError>;           
 }
 
 #[async_trait]
-pub(crate) trait Worker<TState>: Workload<TState> + ContextAccessor<TState>
+pub trait Worker<TState>: Workload<TState> + ContextAccessor<TState>
 where TState: Display + Send + Clone + 'static {
     fn set_workload_state(&self, n_state: TState) {
         self.get_context().lock().state = Some(n_state)
@@ -73,14 +83,8 @@ where TState: Display + Send + Clone + 'static {
 
     async fn get_package(&self, package: &Package) -> Result<PackageFile, PackageDownloadError>{
         let product = self.get_product();
-
         let mut file = tempfile::NamedTempFile::new()?;
-
-        let path_buff = file.as_file().path()?;
-        let path = path_buff.to_str().unwrap().to_owned(); // its wt8 buffer. should never cause a problem
-
-        let file_download_result = self.get_file(&product.get_uri_to_package(&package), file.as_file_mut()).await?;
-
+        let _ = self.get_file(&product.get_uri_to_package(&package), file.as_file_mut()).await?;
         Ok(PackageFile { handle: file, package: package.clone() })
     }
 
@@ -119,13 +123,6 @@ where TState: Display + Send + Clone + 'static {
     }
 }
 
-impl<TState> InstallyApp<TState>
-where TState: Display + Send + Clone + 'static {
-    fn get_context(&self) -> Arc<Mutex<AppContext<TState>>> {
-        self.context.clone()
-    }
-}
-
 impl<TState> ContextAccessor<TState> for InstallyApp<TState>
 where TState: Display + Send + Clone + 'static {
     fn get_context(&self) -> Arc<Mutex<AppContext<TState>>> {
@@ -145,7 +142,7 @@ where TState: Display + Send + Clone + 'static {
 
     pub fn is_error(&self) -> bool {
         match self.get_result() {
-            Some(WorkloadResult::Error(err)) => true,
+            Some(WorkloadResult::Error(_)) => true,
             _ => false
         }
     }
