@@ -8,10 +8,10 @@ pub enum WorkloadError {
 
 #[derive(thiserror::Error, Debug)]
 pub enum RepositoryFetchError {
-    #[error("A error accured while pulling remote repository. {0}")]
+    #[error("A error accured while pulling remote tree. {0}")]
     NetworkError(#[from] HttpStreamError),
 
-    #[error("A error accured while parsing remote repository structure. {0}")]
+    #[error("A error accured while parsing remote tree structure. {0}")]
     ParseError(#[from] quick_xml::DeError),
 }
 
@@ -59,4 +59,14 @@ pub enum PackageUninstallError {
 
     #[error("An error accured while accessing to installition summary file. {0}")]
     SummaryIOError(#[from] WeakStructParseError)
+}
+
+#[derive(thiserror::Error, Debug)]
+pub enum RepositoryCrossCheckError {
+    
+    #[error("Failed to get remote tree. {0}")]
+    FailedToFetchRemoteTree(#[from] RepositoryFetchError),
+
+    #[error("Failed to get installition summary. {0}")]
+    FailedToParseInstallitionSummary(#[from] WeakStructParseError)
 }
