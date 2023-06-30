@@ -118,6 +118,16 @@ impl Product{
         std::path::Path::new(&self.target_directory).join("product.xml")
     }
 
+    pub async fn fetch_repository(&self) -> Result<Repository, RepositoryFetchError> {
+        let xml_uri = format!("{}meta.xml", &self.repository);
+        let xml = client::get_text(&xml_uri, |_| ()).await?;
+
+        let repository: Repository = quick_xml::de::from_str(&xml)?;
+
+        log::info!("Fetched and parsed Repository structure for {}", self.name);
+        Ok(repository)
+    }
+
     pub fn dump(&self) -> Result<(), WeakStructParseError> {
         let payload = quick_xml::se::to_string(&self)?;
 
