@@ -1,15 +1,18 @@
 
-use std::{fmt::{Display, Formatter}, cmp::Ordering};
-
-use crate::helpers::versioning::version_compare;
+use std::{fmt::{Display, Formatter}};
 
 use super::{abstraction::*, errors::*, installer::{Product, PackageInstallition, Package}};
 
 use async_trait::async_trait;
 
-struct PackagePair {
-    local: PackageInstallition,
-    remote: Package
+pub struct PackagePair {
+    pub local: PackageInstallition,
+    pub remote: Package
+}
+
+pub struct CrossCheckSummary {
+    pub map: Vec<PackagePair>,
+    pub updates: Vec<PackagePair>
 }
 
 pub struct UpdaterOptions {
@@ -47,39 +50,22 @@ impl ContextAccessor<UpdaterWorkloadState> for UpdaterAppWrapper {
 impl Workload<UpdaterWorkloadState> for UpdaterAppWrapper {
 
     async fn run(&self) -> Result<(), WorkloadError> {
+        self.set_workload_state(UpdaterWorkloadState::FetchingRemoteTree(self.app.product.name.clone()));  
+
         let summary = self.get_installition_summary()
             .map_err(|err| WorkloadError::Other(err.to_string()))?;
     
-        self.set_workload_state(UpdaterWorkloadState::FetchingRemoteTree(self.app.product.name.clone()));     
         let repository = self.fetch_repository().await
             .map_err(|err| WorkloadError::Other(err.to_string()))?;
 
-        let mut updates = vec![];
-        let mut package_map = vec![];
-
-        for remote in repository.packages.iter() {
-            match summary.find(remote) {
-                Some(local) => {
-                    package_map.push( PackagePair { local: local.clone(), remote: remote.clone() } );
-        
-                    if version_compare(&remote.version, &local.version) == Ordering::Greater{
-                        updates.push( PackagePair { local: local.clone(), remote: remote.clone() } );
-                    }
-                }
-                None => { 
-                    // package is not installed on local
-                }
-            }
-        }
+        let state = summary.cross_check(&repository.packages).await
+            .map_err(|err| WorkloadError::Other(err.to_string()))?;
 
         log::info!("Starting to update {}", &self.app.product.name);
         log::info!("Installed packages: {}", summary.packages.iter().map(|e| e.display_name.clone()).collect::<Vec<_>>().join(", "));
-        log::info!("Packages that are outdated: {}", updates.iter().map(|e| e.local.display_name.clone()).collect::<Vec<_>>().join(", "));
+        log::info!("Packages that are outdated: {}", state.updates.iter().map(|e| e.local.display_name.clone()).collect::<Vec<_>>().join(", "));
 
-        std::fs::create_dir_all(&self.app.product.target_directory)
-            .map_err(|err| WorkloadError::Other(err.to_string()))?;
-
-        for pair in updates {
+        for pair in state.updates {
             let local = pair.local;
             let remote = pair.remote;
             

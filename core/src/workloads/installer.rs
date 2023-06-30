@@ -204,6 +204,32 @@ impl InstallitionSummary {
         Ok(InstallitionSummary { path: struct_path, inner })
     }
 
+    pub async fn cross_check(&self, packages: &[Package]) -> Result<CrossCheckSummary, RepositoryCrossCheckError> {
+        let summary = Self::read_or_create(&std::path::Path::new("").to_path_buf())?;
+
+        let mut updates = vec![];
+        let mut map = vec![];
+
+        for remote in packages.iter() {
+            match summary.find(remote) {
+                Some(local) => {
+                    map.push( PackagePair { local: local.clone(), remote: remote.clone() } );
+        
+                    if version_compare(&remote.version, &local.version) == std::cmp::Ordering::Greater{
+                        updates.push( PackagePair { local: local.clone(), remote: remote.clone() } );
+                    }
+                }
+                None => { 
+                    // package is not installed on local
+                }
+            }
+        }
+
+        Ok(CrossCheckSummary { 
+            map,
+            updates
+        })
+    }
     pub fn installed(&mut self, package: Package, files: Vec<std::path::PathBuf>) -> &mut Self {
         //TODO: inspect
         if self.packages.iter().any(|n| n.name == package.name){
