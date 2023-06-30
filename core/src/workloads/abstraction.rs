@@ -70,15 +70,7 @@ where TState: Display + Send + Clone + 'static {
     }
 
     async fn fetch_repository(&self) -> Result<Repository, RepositoryFetchError>{
-        let product = self.get_product();
-
-        let xml_uri = format!("{}meta.xml", &product.repository);
-        let xml = self.get_text(&xml_uri).await?;
-
-        let repository: Repository = quick_xml::de::from_str(&xml)?;
-
-        log::info!("Fetched and parsed Repository structure for {}", product.name);
-        Ok(repository)
+        self.get_product().fetch_repository().await
     }
 
     async fn get_package(&self, package: &Package) -> Result<PackageFile, PackageDownloadError>{
