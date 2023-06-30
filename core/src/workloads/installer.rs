@@ -276,19 +276,6 @@ impl InstallitionSummary {
         Err(PackageUninstallError::InstallitionNotFound)
     }
 
-    pub fn find(&self, package: &Package) -> Option<PackageInstallition> {
-        self.packages.iter().find(|n| n.name == package.name)
-            .map(|f| f.clone())
-    }
-
-    pub fn packages(&self) -> &[PackageInstallition] {
-        &self.packages
-    }
-
-    pub fn packages_mut(&mut self) -> &mut [PackageInstallition] {
-        &mut self.packages
-    } 
-
     pub fn save(&mut self) -> Result<&mut Self, WeakStructParseError> {
         let xml_decl = b"<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\" ?>\n";
         let xml_str = quick_xml::se::to_string(&self.inner)?;
