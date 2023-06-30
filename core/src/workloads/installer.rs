@@ -1,9 +1,9 @@
 
 use std::{fmt::{Display, Formatter}, ops::{Deref, DerefMut}, io::{Read, Write, Seek}, path::PathBuf};
 
-use crate::workloads::errors::WorkloadError;
+use crate::{workloads::errors::WorkloadError, http::client, helpers::versioning::version_compare};
 
-use super::{abstraction::{Worker, ContextAccessor, InstallerApp, ContextArcT, Workload}, errors::{WeakStructParseError, PackageUninstallError}};
+use super::{abstraction::{Worker, ContextAccessor, InstallerApp, ContextArcT, Workload}, errors::{WeakStructParseError, PackageUninstallError, RepositoryCrossCheckError, RepositoryFetchError}, updater::{PackagePair, CrossCheckSummary}};
 
 use serde::{Deserialize, Serialize};
 use async_trait::async_trait;
@@ -51,6 +51,7 @@ impl Workload<InstallerWorkloadState> for InstallerWrapper {
         std::fs::create_dir_all(&self.app.product.target_directory)
             .map_err(|err| WorkloadError::Other(err.to_string()))?;
 
+        // api uses product, resovles it from filesystem
         self.get_product().dump()
             .map_err(|e| WorkloadError::Other(e.to_string()))?;
 
@@ -106,6 +107,7 @@ impl Product{
 
         Ok(product)
     }
+
     pub fn get_path_to_package(&self, _package: &Package) -> &std::path::Path {
         std::path::Path::new(&self.target_directory)
     }
@@ -225,6 +227,7 @@ impl InstallitionSummary {
         Ok(InstallitionSummary { path: struct_path, inner })
     }
 
+    
     pub fn find(&self, package: &Package) -> Option<PackageInstallition> {
         self.packages.iter().find(|n| n.name == package.name)
         .map(|f| f.clone())
@@ -264,6 +267,7 @@ impl InstallitionSummary {
     pub fn packages_mut(&mut self) -> &mut [PackageInstallition] {
         &mut self.packages
     } 
+
     pub fn installed(&mut self, package: Package, files: Vec<std::path::PathBuf>) -> &mut Self {
         //TODO: inspect
         if self.packages.iter().any(|n| n.name == package.name){
@@ -296,7 +300,7 @@ impl InstallitionSummary {
 
         Err(PackageUninstallError::InstallitionNotFound)
     }
-
+    
     pub fn save(&mut self) -> Result<&mut Self, WeakStructParseError> {
         let xml_decl = b"<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\" ?>\n";
         let xml_str = quick_xml::se::to_string(&self.inner)?;
