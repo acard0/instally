@@ -233,7 +233,7 @@ impl InstallitionSummary {
         .map(|f| f.clone())
     }
     
-    pub async fn cross_check(&self, packages: &[Package]) -> Result<CrossCheckSummary, RepositoryCrossCheckError> {
+    pub fn cross_check(&self, packages: &[Package]) -> Result<CrossCheckSummary, RepositoryCrossCheckError> {
         let summary = Self::read_or_create(&std::path::Path::new("").to_path_buf())?;
 
         let mut updates = vec![];

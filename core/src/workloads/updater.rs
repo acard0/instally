@@ -57,7 +57,7 @@ impl Workload for UpdaterAppWrapper {
         let repository = self.fetch_repository().await
             .map_err(|err| WorkloadError::Other(err.to_string()))?;
 
-        let state = summary.cross_check(&repository.packages).await
+        let state = summary.cross_check(&repository.packages)
             .map_err(|err| WorkloadError::Other(err.to_string()))?;
 
         log::info!("Starting to update {}", &self.app.product.name);
