@@ -1,23 +1,18 @@
+use std::{sync::Arc, collections::HashMap, fmt::Display};
 
-use std::{fmt::{Display}, sync::Arc};
 use async_trait::async_trait;
-
-use parking_lot::{Mutex};
+use once_cell::sync::Lazy;
+use parking_lot::Mutex;
 
 use crate::{http::{client::{self, HttpStreamError}}, archiving};
+use super::{installer::{Product, Repository, Package, PackageFile, InstallitionSummary}, errors::*};
 
-use super::{installer::{Product, Repository, Package, PackageFile, InstallitionSummary, InstallerWorkloadState}, errors::*, uninstaller::UninstallerWorkloadState, updater::UpdaterWorkloadState};
+pub type ArcM<T> = Arc<Mutex<T>>;
+pub type LazyArcM<T> = Lazy<ArcM<T>>;
 
-pub type InstallerContext = AppContext<InstallerWorkloadState>;
-pub type InstallerApp = InstallyApp<InstallerWorkloadState>;
+pub type ContextArcM = ArcM<AppContext>;
 
-pub type UninstallerContext = AppContext<UninstallerWorkloadState>;
-pub type UninstallerApp = InstallyApp<UninstallerWorkloadState>;
-
-pub type UpdaterContext = AppContext<UpdaterWorkloadState>;
-pub type UpdaterApp = InstallyApp<UpdaterWorkloadState>;
-
-pub type ContextArcT<T> = Arc<Mutex<AppContext<T>>>;
+static CONTEXT_CALLBACKS: LazyArcM<HashMap<usize, StateCallbackBox>> = LazyArcM::new(|| ArcM::new(Mutex::new(HashMap::new())));
 
 #[derive(Clone)]
 pub enum WorkloadResult {
@@ -25,14 +20,29 @@ pub enum WorkloadResult {
     Error(String)
 }
 
-#[derive(Clone)]
-pub struct AppContext<TState>
-where TState: Display + Send + Clone + 'static {
-    pub frame_count: i32,
-    
-    state: Option<TState>,
+#[derive(struct_field::StructField, Clone)]
+pub struct AppContext {
+    frame_count: u64, 
+    state: Option<String>,
     state_progress: f32,
-    result: Option<WorkloadResult>, 
+    result: Option<WorkloadResult>,
+}
+
+impl AppContextNotifiable for AppContext {
+    fn on_update(&self, field: AppContextField) {
+
+    }
+
+    fn subscribe(&self, action: StateCallbackBox) -> usize {
+        let mut map =  CONTEXT_CALLBACKS.lock();
+        let id = map.len();
+        map.insert(id, action);
+        id
+    }
+
+    fn unsubscribe(&self, id: usize) -> bool {
+        CONTEXT_CALLBACKS.lock().remove(&id).is_some()
+    }
 }
 
 #[derive(Clone)]
@@ -54,14 +64,21 @@ pub trait Workload {
 #[async_trait]
 pub trait Worker: Workload + ContextAccessor {
     fn set_workload_state<S: Display>(&self, n_state: S) {
+        let binding = self.get_context();
+        let mut ctx = binding.lock(); 
+        ctx.update_field(AppContextField::state(Some(n_state.to_string())))
     }
 
     fn set_state_progress(&self, n_progress: f32) {
-        self.get_context().lock().state_progress = n_progress;
+        let binding = self.get_context();
+        let mut ctx = binding.lock();
+        ctx.update_field(AppContextField::state_progress(n_progress));
     }
 
     fn set_result(&self, result: WorkloadResult) {
-        self.get_context().lock().result = Some(result)
+        let binding = self.get_context();
+        let mut ctx = binding.lock();
+        ctx.update_field(AppContextField::result(Some(result)))
     }
 
     async fn fetch_repository(&self) -> Result<Repository, RepositoryFetchError>{
