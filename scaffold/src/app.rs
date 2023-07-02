@@ -1,4 +1,4 @@
-use std::{process, fmt::Display};
+use std::{process};
 
 use egui::{ProgressBar};
 use instally_core::{workloads::abstraction::{InstallyApp}};
@@ -7,7 +7,7 @@ pub struct AppWrapper {
     app: InstallyApp,
 }
 
-impl AppWrapper{
+impl AppWrapper {
     pub fn new(app: InstallyApp) -> AppWrapper {
 
         AppWrapper { app }
@@ -18,7 +18,7 @@ impl eframe::App for AppWrapper{
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
 
         let binding = self.app.context.clone();
-        let mut app = binding.lock();
+        let app = binding.lock();
 
         custom_window_frame(ctx, frame, format!("instally - {}", self.app.product.name).as_ref(), |ui| {
             
@@ -55,7 +55,7 @@ impl eframe::App for AppWrapper{
                 }
             });
 
-            app.frame_count += 1;
+            // 
 
         });
     }

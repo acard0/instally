@@ -2,25 +2,19 @@ use std::{fmt::{Formatter, Display}, cell::RefCell};
 
 use async_trait::async_trait;
 
-use super::{abstraction::{ContextAccessor, Worker, Workload, ContextArcM, InstallyApp}, installer::{Product, PackageInstallition}, errors::WorkloadError};
+use super::{abstraction::{ContextAccessor, Worker, Workload, ContextArcM, AppWrapper}, installer::{Product, PackageInstallition}, errors::WorkloadError};
 
 
-pub struct UninstallerWrapper {
-    app: InstallyApp,
-    opts: UninstallerOptions
-}
+pub type UninstallerWrapper = AppWrapper<UninstallerOptions>;
 
+#[derive(Clone)]
 pub struct UninstallerOptions {
     pub target_packages: Option<Vec<PackageInstallition>>,
 }
 
-impl UninstallerWrapper {
-    pub fn new(app: InstallyApp) -> Self {
-        UninstallerWrapper { app, opts: UninstallerOptions { target_packages: None } }
-    }
-
-    pub fn new_with_opts(app: InstallyApp, opts: UninstallerOptions) -> Self {
-        UninstallerWrapper { app,  opts}
+impl Default for UninstallerOptions {
+    fn default() -> Self {
+        UninstallerOptions { target_packages: None }
     }
 }
 
@@ -45,7 +39,7 @@ impl Workload for UninstallerWrapper {
 
         // sandwich borrow?
         let summary = summary_cell.borrow_mut(); 
-        let targets = match &self.opts.target_packages {
+        let targets = match &self.settings.target_packages {
             Some(opted) => {
                 opted
             }

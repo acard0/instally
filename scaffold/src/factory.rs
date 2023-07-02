@@ -1,100 +1,17 @@
-use std::fmt::Display;
 
-use instally_core::workloads::{installer::{Product, InstallerWrapper, InstallerWorkloadState}, abstraction::{WorkloadResult, Worker, Workload, InstallyApp}, updater::{UpdaterAppWrapper, UpdaterWorkloadState}, uninstaller::{UninstallerWrapper, UninstallerWorkloadState}};
+use instally_core::{factory::{WorkloadType, Executor}, workloads::{abstraction::InstallyApp, installer::Product}};
 
-use crate::app::AppWrapper;
-
-pub fn app(product_meta: &Product) -> InstallyApp {
-    // Arc wrapper
-    InstallyApp::new(product_meta.clone())
-}
-
-pub async fn installer(product: &Product, do_spawn_ui: bool) {
-    let app = app(product);
-
-    // spawn worker thread
-    let clone_worker = app.clone();
-    tokio::spawn(async move {
-        let installer = InstallerWrapper::new(clone_worker); 
-        let workload_result = installer.run().await;
+pub fn run(product_meta: &Product, settings: WorkloadType, do_spawn_ui: bool) -> Executor {
+    let executor = instally_core::factory::run(product_meta, settings);
     
-        match workload_result {
-            Ok(()) => {
-                installer.set_result(WorkloadResult::Ok);
-                installer.set_workload_state(InstallerWorkloadState::Done);
-                log::info!("Workload completed");
-            },
-            Err(err) => {
-                log::error!("\n{err:?}");
-                installer.set_result(WorkloadResult::Error(err.to_string()));
-                installer.set_workload_state(InstallerWorkloadState::Interrupted(err.to_string()));
-            }
-        }
-    });
-
     if do_spawn_ui {
-        spawn_ui(app.clone());
+        spawn_ui(executor.ctx.clone());
     }
+
+    executor
 }
 
-pub async fn updater(product: &Product, do_spawn_ui: bool) {
-    let app = app(product);
-
-    // spawn worker thread
-    let clone_worker = app.clone();
-    tokio::spawn(async move {
-        let updater = UpdaterAppWrapper::new(clone_worker); 
-        let workload_result = updater.run().await;
-    
-        match workload_result {
-            Ok(()) => {
-                updater.set_result(WorkloadResult::Ok);
-                updater.set_workload_state(UpdaterWorkloadState::Done);
-                println!("Workload completed");
-            },
-            Err(err) => {
-                log::error!("\n{err:?}");
-                updater.set_result(WorkloadResult::Error(err.to_string()));
-                updater.set_workload_state(UpdaterWorkloadState::Interrupted(err.to_string()));
-            }
-            
-        }
-    });
-
-    if do_spawn_ui {
-        spawn_ui(app.clone());
-    }
-}
-
-pub async fn uninstaller(product: &Product, do_spawn_ui: bool) {
-    let app = app(product);
-
-    // spawn worker thread
-    let clone_worker = app.clone();
-    tokio::spawn(async move {
-        let uninstaller = UninstallerWrapper::new(clone_worker); 
-        let workload_result = uninstaller.run().await;
-    
-        match workload_result {
-            Ok(()) => {
-                uninstaller.set_result(WorkloadResult::Ok);
-                uninstaller.set_workload_state(UninstallerWorkloadState::Done);
-                println!("Workload completed");
-            },
-            Err(err) => {
-                log::error!("\n{err:?}");
-                uninstaller.set_result(WorkloadResult::Error(err.to_string()));
-                uninstaller.set_workload_state(UninstallerWorkloadState::Interrupted(err.to_string()));
-            }
-        }
-    });
-
-    if do_spawn_ui {
-        spawn_ui(app.clone());
-    }
-}
-
-pub fn spawn_ui(app: InstallyApp) {
+pub fn spawn_ui(ctx: InstallyApp) {
 
     // build native opts
     let options = eframe::NativeOptions {
@@ -107,7 +24,7 @@ pub fn spawn_ui(app: InstallyApp) {
         ..Default::default()
     };
 
-    let app_wrapper = AppWrapper::new(app);
+    let app_wrapper = crate::app::AppWrapper::new(ctx);
     let _ = eframe::run_native(
         "instally", // unused title
         options,

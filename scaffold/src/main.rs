@@ -4,7 +4,7 @@
 
 // #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 
-use instally_core::workloads::installer::Product;
+use instally_core::{workloads::installer::{Product, InstallerOptions}, factory::WorkloadType};
 
 mod factory;
 mod app;
@@ -38,7 +38,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     log::info!("Payload xml: {:?}", quick_xml::se::to_string(&product));
 
-    factory::installer(&product, true).await;
+    _ = factory::run(&product, WorkloadType::Installer(InstallerOptions::default()), true)
+        .handle.await;
 
     Ok(())
 }

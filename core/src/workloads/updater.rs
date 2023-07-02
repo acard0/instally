@@ -15,28 +15,22 @@ pub struct CrossCheckSummary {
     pub updates: Vec<PackagePair>
 }
 
+pub type UpdaterWrapper = AppWrapper<UpdaterOptions>;
+
+#[derive(Clone)]
 pub struct UpdaterOptions {
     pub target_packages: Option<Vec<PackageInstallition>>,
 }
 
-pub struct UpdaterAppWrapper {
-    app: InstallyApp,
-    opts: UpdaterOptions,
-}
-
-impl UpdaterAppWrapper {
-    pub fn new(app: InstallyApp) -> Self {
-        UpdaterAppWrapper { app, opts: UpdaterOptions { target_packages: None } }
-    }
-
-    pub fn new_with_opts(app: InstallyApp, opts: UpdaterOptions) -> Self {
-        UpdaterAppWrapper { app, opts: opts }
+impl Default for UpdaterOptions {
+    fn default() -> Self {
+        UpdaterOptions { target_packages: None }
     }
 }
 
-impl Worker for UpdaterAppWrapper { }
+impl Worker for UpdaterWrapper { }
 
-impl ContextAccessor for UpdaterAppWrapper {
+impl ContextAccessor for UpdaterWrapper {
     fn get_context(&self) -> ContextArcM {
         self.app.get_context()
     }
@@ -47,7 +41,7 @@ impl ContextAccessor for UpdaterAppWrapper {
 }
 
 #[async_trait]
-impl Workload for UpdaterAppWrapper {
+impl Workload for UpdaterWrapper {
     async fn run(&self) -> Result<(), WorkloadError> {
         self.set_workload_state(UpdaterWorkloadState::FetchingRemoteTree(self.app.product.name.clone()));  
 
@@ -69,7 +63,7 @@ impl Workload for UpdaterAppWrapper {
             let remote = pair.remote;
             
             // check if package is opted-out specifically via start args
-            if let Some(targets) = &self.opts.target_packages {
+            if let Some(targets) = &self.settings.target_packages {
                 if !targets.iter().any(|f| &f.name == &local.name) {
                     log::info!("Skipping update of {} as it's not listed in target package list. Installed: {}, New: {}.", local.display_name, local.version, remote.version);
                     continue;

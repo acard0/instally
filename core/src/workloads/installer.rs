@@ -3,27 +3,22 @@ use std::{fmt::{Display, Formatter}, ops::{Deref, DerefMut}, io::{Read, Write, S
 
 use crate::{workloads::errors::WorkloadError, http::client, helpers::versioning::version_compare};
 
-use super::{abstraction::{Worker, ContextAccessor, Workload, InstallyApp, ContextArcM}, errors::{WeakStructParseError, PackageUninstallError, RepositoryCrossCheckError, RepositoryFetchError}, updater::{PackagePair, CrossCheckSummary}};
+use super::{abstraction::{Worker, ContextAccessor, Workload, ContextArcM, AppWrapper}, errors::{WeakStructParseError, PackageUninstallError, RepositoryCrossCheckError, RepositoryFetchError}, updater::{PackagePair, CrossCheckSummary}};
 
 use serde::{Deserialize, Serialize};
 use async_trait::async_trait;
 
+
+pub type InstallerWrapper = AppWrapper<InstallerOptions>;
+
+#[derive(Clone)]
 pub struct InstallerOptions {
-    pub target_packages: Option<Vec<Package>>
+    pub target_packages: Option<Vec<Package>>,
 }
 
-pub struct InstallerWrapper {
-    app: InstallyApp,
-    opts: InstallerOptions
-}
-
-impl InstallerWrapper {
-    pub fn new(app: InstallyApp) -> Self {
-        InstallerWrapper { app, opts: InstallerOptions { target_packages: None } }
-    }
-
-    pub fn new_with_opts(app: InstallyApp, opts: InstallerOptions) -> Self {
-        InstallerWrapper { app, opts: opts }
+impl Default for InstallerOptions {
+    fn default() -> Self {
+        InstallerOptions { target_packages: None }
     }
 }
 
@@ -55,7 +50,7 @@ impl Workload for InstallerWrapper {
         self.get_product().dump()
             .map_err(|e| WorkloadError::Other(e.to_string()))?;
 
-        let targets = match &self.opts.target_packages {
+        let targets = match &self.settings.target_packages {
             None => repository.packages,
             Some(t) => t.to_vec()
         };

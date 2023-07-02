@@ -15,6 +15,26 @@ pub type ContextArcM = ArcM<AppContext>;
 static CONTEXT_CALLBACKS: LazyArcM<HashMap<usize, StateCallbackBox>> = LazyArcM::new(|| ArcM::new(Mutex::new(HashMap::new())));
 
 #[derive(Clone, Debug)]
+pub struct AppWrapper<T: Default + Clone> {
+    pub app: InstallyApp,
+    pub settings: T, 
+}
+
+impl<T: Default + Clone> AppWrapper<T> {
+    pub fn new(app: InstallyApp) -> Self {
+        AppWrapper { 
+            app,
+            settings: T::default()
+        }
+    }
+
+    pub fn new_with_opts(app: InstallyApp, settings: T) -> Self {
+        AppWrapper { app, settings}
+    }
+}
+
+
+#[derive(Clone, Debug)]
 pub enum WorkloadResult {
     Ok,
     Error(String)
@@ -48,7 +68,7 @@ impl AppContextNotifiable for AppContext {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct InstallyApp {
     pub product: Product,
     pub context: Arc<Mutex<AppContext>>,
