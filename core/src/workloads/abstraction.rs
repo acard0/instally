@@ -14,13 +14,13 @@ pub type ContextArcM = ArcM<AppContext>;
 
 static CONTEXT_CALLBACKS: LazyArcM<HashMap<usize, StateCallbackBox>> = LazyArcM::new(|| ArcM::new(Mutex::new(HashMap::new())));
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum WorkloadResult {
     Ok,
     Error(String)
 }
 
-#[derive(struct_field::StructField, Clone)]
+#[derive(struct_field::StructField, Clone, Debug)]
 pub struct AppContext {
     frame_count: u64, 
     state: Option<String>,
@@ -30,7 +30,10 @@ pub struct AppContext {
 
 impl AppContextNotifiable for AppContext {
     fn on_update(&self, field: AppContextField) {
-
+        CONTEXT_CALLBACKS.lock().iter().for_each(|f| {
+            let (_, callback) = f;
+            callback(AppContextChange { current_cloned: self.clone(), change_cloned:  field.clone()})
+        })
     }
 
     fn subscribe(&self, action: StateCallbackBox) -> usize {

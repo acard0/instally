@@ -26,6 +26,7 @@ pub fn derive_field(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     };
     let _field_enum_ident = Ident::new(&(ty.to_string() + "Field"), Span::call_site());
     let _field_notifiable_trait_ident = Ident::new(&(ty.to_string() + "Notifiable"), Span::call_site());
+    let _field_change_struct_ident = Ident::new(&(ty.to_string() + "Change"), Span::call_site());
 
     let fields = filter_fields(match data {
         syn::Data::Struct(ref s) => &s.fields,
@@ -59,8 +60,15 @@ pub fn derive_field(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
 
     let tokens = quote! {
-        type StateCallback = dyn Fn(#ty #ty_generics) + Send + Sync + 'static;
-        type StateCallbackBox = Box<StateCallback>;
+        #vis type StateCallback = dyn Fn(#_field_change_struct_ident #ty_generics) + Send + Sync + 'static;
+        #vis type StateCallbackBox = Box<StateCallback>;
+
+        # [derive(Clone, Debug)]
+        #derive
+        #vis struct #_field_change_struct_ident #ty_generics {
+            current_cloned: #ty #ty_generics,
+            change_cloned: #_field_enum_ident #ty_generics
+        }        
 
         # [allow(non_camel_case_types)]
         #derive
@@ -73,7 +81,7 @@ pub fn derive_field(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
         }
 
         # [allow(non_camel_case_types)]
-        # [derive(Clone)]
+        # [derive(Clone, Debug)]
         #derive
         #vis enum #_field_enum_ident #ty_generics
             #where_clause
