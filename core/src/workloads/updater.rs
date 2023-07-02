@@ -20,24 +20,24 @@ pub struct UpdaterOptions {
 }
 
 pub struct UpdaterAppWrapper {
-    app: UpdaterApp,
+    app: InstallyApp,
     opts: UpdaterOptions,
 }
 
 impl UpdaterAppWrapper {
-    pub fn new(app: UpdaterApp) -> Self {
+    pub fn new(app: InstallyApp) -> Self {
         UpdaterAppWrapper { app, opts: UpdaterOptions { target_packages: None } }
     }
 
-    pub fn new_with_opts(app: UpdaterApp, opts: UpdaterOptions) -> Self {
+    pub fn new_with_opts(app: InstallyApp, opts: UpdaterOptions) -> Self {
         UpdaterAppWrapper { app, opts: opts }
     }
 }
 
-impl Worker<UpdaterWorkloadState> for UpdaterAppWrapper { }
+impl Worker for UpdaterAppWrapper { }
 
-impl ContextAccessor<UpdaterWorkloadState> for UpdaterAppWrapper {
-    fn get_context(&self) -> ContextArcT<UpdaterWorkloadState> {
+impl ContextAccessor for UpdaterAppWrapper {
+    fn get_context(&self) -> ContextArcM {
         self.app.get_context()
     }
 
@@ -47,8 +47,7 @@ impl ContextAccessor<UpdaterWorkloadState> for UpdaterAppWrapper {
 }
 
 #[async_trait]
-impl Workload<UpdaterWorkloadState> for UpdaterAppWrapper {
-
+impl Workload for UpdaterAppWrapper {
     async fn run(&self) -> Result<(), WorkloadError> {
         self.set_workload_state(UpdaterWorkloadState::FetchingRemoteTree(self.app.product.name.clone()));  
 

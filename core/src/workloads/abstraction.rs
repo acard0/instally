@@ -36,29 +36,24 @@ where TState: Display + Send + Clone + 'static {
 }
 
 #[derive(Clone)]
-pub struct InstallyApp<TState>
-where TState: Display + Send + Clone + 'static {
+pub struct InstallyApp {
     pub product: Product,
-    pub context: Arc<Mutex<AppContext<TState>>>,
+    pub context: Arc<Mutex<AppContext>>,
 }
 
-pub trait ContextAccessor<TState>
-where TState: Display + Send + Clone + 'static {
-    fn get_context(&self) -> Arc<Mutex<AppContext<TState>>>;
+pub trait ContextAccessor {
+    fn get_context(&self) -> Arc<Mutex<AppContext>>;
     fn get_product(&self) -> Product;
 }
 
 #[async_trait]
-pub trait Workload<TState> 
-where  TState: Display + Send + Clone + 'static {      
+pub trait Workload {      
     async fn run(&self) -> Result<(), WorkloadError>;           
 }
 
 #[async_trait]
-pub trait Worker<TState>: Workload<TState> + ContextAccessor<TState>
-where TState: Display + Send + Clone + 'static {
-    fn set_workload_state(&self, n_state: TState) {
-        self.get_context().lock().state = Some(n_state)
+pub trait Worker: Workload + ContextAccessor {
+    fn set_workload_state<S: Display>(&self, n_state: S) {
     }
 
     fn set_state_progress(&self, n_progress: f32) {
@@ -115,9 +110,9 @@ where TState: Display + Send + Clone + 'static {
     }
 }
 
-impl<TState> ContextAccessor<TState> for InstallyApp<TState>
-where TState: Display + Send + Clone + 'static {
-    fn get_context(&self) -> Arc<Mutex<AppContext<TState>>> {
+impl ContextAccessor for InstallyApp
+{
+    fn get_context(&self) -> Arc<Mutex<AppContext>> {
         self.context.clone()
     }
 
@@ -126,8 +121,8 @@ where TState: Display + Send + Clone + 'static {
     }
 }
 
-impl<TState> AppContext<TState>
-where TState: Display + Send + Clone + 'static {
+impl AppContext
+{
     pub fn is_completed(&self) -> bool {
         self.get_result().is_some()
     }
@@ -150,7 +145,7 @@ where TState: Display + Send + Clone + 'static {
         }
     }
 
-    pub fn get_state(&self) -> Option<TState> {
+    pub fn get_state(&self) -> Option<String> {
         match &self.state {
             Some(st) => Some(st.clone()),
             _ => None
@@ -169,8 +164,8 @@ where TState: Display + Send + Clone + 'static {
     }  
 }
 
-impl<TState> Default for InstallyApp<TState>
-where TState: Display + Send + Clone + 'static {
+impl Default for InstallyApp
+{
     fn default() -> Self {
         InstallyApp { 
             context: Arc::new(Mutex::new(AppContext::default())),
@@ -179,8 +174,8 @@ where TState: Display + Send + Clone + 'static {
     }
 }
 
-impl<TState> InstallyApp<TState>
-where TState: Display + Send + Clone + 'static {
+impl InstallyApp
+{
     pub fn new(prdct: Product) -> Self {
         InstallyApp {
             context: Arc::new(Mutex::new(AppContext::default())),
@@ -189,8 +184,8 @@ where TState: Display + Send + Clone + 'static {
     }
 }
 
-impl<TState> Default for AppContext<TState>
-where TState: Display + Send + Clone + 'static {
+impl Default for AppContext
+{
     fn default() -> Self {
         AppContext {
             frame_count: 0,

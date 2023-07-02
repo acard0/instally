@@ -1,15 +1,16 @@
 use std::fmt::Display;
 
-use instally_core::workloads::{installer::{Product, InstallerWrapper, InstallerWorkloadState}, abstraction::{InstallerApp, WorkloadResult, Worker, Workload, UpdaterApp, UninstallerApp, InstallyApp}, updater::{UpdaterAppWrapper, UpdaterWorkloadState}, uninstaller::{UninstallerWrapper, UninstallerWorkloadState}};
+use instally_core::workloads::{installer::{Product, InstallerWrapper, InstallerWorkloadState}, abstraction::{WorkloadResult, Worker, Workload, InstallyApp}, updater::{UpdaterAppWrapper, UpdaterWorkloadState}, uninstaller::{UninstallerWrapper, UninstallerWorkloadState}};
 
 use crate::app::AppWrapper;
 
-pub async fn installer(product: &Product, do_spawn_ui: bool) {
+pub fn app(product_meta: &Product) -> InstallyApp {
+    // Arc wrapper
+    InstallyApp::new(product_meta.clone())
+}
 
-    // create app state holder that is thread-safe
-    let app = Box::leak(Box::new(|| {
-        InstallerApp::new(product.clone())
-    }))();
+pub async fn installer(product: &Product, do_spawn_ui: bool) {
+    let app = app(product);
 
     // spawn worker thread
     let clone_worker = app.clone();
@@ -37,11 +38,7 @@ pub async fn installer(product: &Product, do_spawn_ui: bool) {
 }
 
 pub async fn updater(product: &Product, do_spawn_ui: bool) {
-
-    // create app state holder that is thread-safe
-    let app = Box::leak(Box::new(|| {
-        UpdaterApp::new(product.clone())
-    }))();
+    let app = app(product);
 
     // spawn worker thread
     let clone_worker = app.clone();
@@ -70,11 +67,7 @@ pub async fn updater(product: &Product, do_spawn_ui: bool) {
 }
 
 pub async fn uninstaller(product: &Product, do_spawn_ui: bool) {
-
-    // create app state holder that is thread-safe
-    let app = Box::leak(Box::new(|| {
-        UninstallerApp::new(product.clone())
-    }))();
+    let app = app(product);
 
     // spawn worker thread
     let clone_worker = app.clone();
@@ -101,8 +94,7 @@ pub async fn uninstaller(product: &Product, do_spawn_ui: bool) {
     }
 }
 
-pub fn spawn_ui<TState>(app: InstallyApp<TState>) 
-where TState: Display + Send + Clone + 'static {
+pub fn spawn_ui(app: InstallyApp) {
 
     // build native opts
     let options = eframe::NativeOptions {

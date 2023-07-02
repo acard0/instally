@@ -2,11 +2,11 @@ use std::{fmt::{Formatter, Display}, cell::RefCell};
 
 use async_trait::async_trait;
 
-use super::{abstraction::{ContextAccessor, Worker, Workload, UninstallerApp, ContextArcT}, installer::{Product, PackageInstallition}, errors::WorkloadError};
+use super::{abstraction::{ContextAccessor, Worker, Workload, ContextArcM, InstallyApp}, installer::{Product, PackageInstallition}, errors::WorkloadError};
 
 
 pub struct UninstallerWrapper {
-    app: UninstallerApp,
+    app: InstallyApp,
     opts: UninstallerOptions
 }
 
@@ -15,19 +15,19 @@ pub struct UninstallerOptions {
 }
 
 impl UninstallerWrapper {
-    pub fn new(app: UninstallerApp) -> Self {
+    pub fn new(app: InstallyApp) -> Self {
         UninstallerWrapper { app, opts: UninstallerOptions { target_packages: None } }
     }
 
-    pub fn new_with_opts(app: UninstallerApp, opts: UninstallerOptions) -> Self {
+    pub fn new_with_opts(app: InstallyApp, opts: UninstallerOptions) -> Self {
         UninstallerWrapper { app,  opts}
     }
 }
 
-impl Worker<UninstallerWorkloadState> for UninstallerWrapper { }
+impl Worker for UninstallerWrapper { }
 
-impl ContextAccessor<UninstallerWorkloadState> for UninstallerWrapper {
-    fn get_context(&self) -> ContextArcT<UninstallerWorkloadState> {
+impl ContextAccessor for UninstallerWrapper {
+    fn get_context(&self) -> ContextArcM {
         self.app.get_context()
     }
 
@@ -37,7 +37,7 @@ impl ContextAccessor<UninstallerWorkloadState> for UninstallerWrapper {
 }
 
 #[async_trait] 
-impl Workload<UninstallerWorkloadState> for UninstallerWrapper {
+impl Workload for UninstallerWrapper {
     async fn run(&self) -> Result<(), WorkloadError> {
         let summary_cell = RefCell::new(self.get_installition_summary()
             .map_err(|err| WorkloadError::Other(err.to_string()))?

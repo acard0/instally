@@ -3,20 +3,18 @@ use std::{process, fmt::Display};
 use egui::{ProgressBar};
 use instally_core::{workloads::abstraction::{InstallyApp}};
 
-pub struct AppWrapper<TState> 
-where TState: Display + Send + Clone + 'static {
-    app: InstallyApp<TState>,
+pub struct AppWrapper {
+    app: InstallyApp,
 }
 
-impl<TState> AppWrapper<TState>
-where TState: Display + Send + Clone + 'static {
-    pub fn new(app_: InstallyApp<TState>) -> AppWrapper<TState> {
-        AppWrapper { app: app_ }
+impl AppWrapper{
+    pub fn new(app: InstallyApp) -> AppWrapper {
+
+        AppWrapper { app }
     }
 }
 
-impl<TState> eframe::App for AppWrapper<TState>
-where TState: Display + Send + Clone + 'static {
+impl eframe::App for AppWrapper{
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
 
         let binding = self.app.context.clone();

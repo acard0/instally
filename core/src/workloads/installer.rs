@@ -3,7 +3,7 @@ use std::{fmt::{Display, Formatter}, ops::{Deref, DerefMut}, io::{Read, Write, S
 
 use crate::{workloads::errors::WorkloadError, http::client, helpers::versioning::version_compare};
 
-use super::{abstraction::{Worker, ContextAccessor, InstallerApp, ContextArcT, Workload}, errors::{WeakStructParseError, PackageUninstallError, RepositoryCrossCheckError, RepositoryFetchError}, updater::{PackagePair, CrossCheckSummary}};
+use super::{abstraction::{Worker, ContextAccessor, Workload, InstallyApp, ContextArcM}, errors::{WeakStructParseError, PackageUninstallError, RepositoryCrossCheckError, RepositoryFetchError}, updater::{PackagePair, CrossCheckSummary}};
 
 use serde::{Deserialize, Serialize};
 use async_trait::async_trait;
@@ -13,24 +13,24 @@ pub struct InstallerOptions {
 }
 
 pub struct InstallerWrapper {
-    app: InstallerApp,
+    app: InstallyApp,
     opts: InstallerOptions
 }
 
 impl InstallerWrapper {
-    pub fn new(app: InstallerApp) -> Self {
+    pub fn new(app: InstallyApp) -> Self {
         InstallerWrapper { app, opts: InstallerOptions { target_packages: None } }
     }
 
-    pub fn new_with_opts(app: InstallerApp, opts: InstallerOptions) -> Self {
+    pub fn new_with_opts(app: InstallyApp, opts: InstallerOptions) -> Self {
         InstallerWrapper { app, opts: opts }
     }
 }
 
-impl Worker<InstallerWorkloadState> for InstallerWrapper { }
+impl Worker for InstallerWrapper { }
 
-impl ContextAccessor<InstallerWorkloadState> for InstallerWrapper {
-    fn get_context(&self) -> ContextArcT<InstallerWorkloadState> {
+impl ContextAccessor for InstallerWrapper {
+    fn get_context(&self) -> ContextArcM {
         self.app.get_context()
     }
 
@@ -40,7 +40,7 @@ impl ContextAccessor<InstallerWorkloadState> for InstallerWrapper {
 }
 
 #[async_trait]
-impl Workload<InstallerWorkloadState> for InstallerWrapper {
+impl Workload for InstallerWrapper {
     async fn run(&self) -> Result<(), WorkloadError> {
         log::info!("Starting to install {}", &self.app.product.name);
 
