@@ -1299,12 +1299,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8a9ee70c43aaf417c914396645a0fa852624801b24ebb7ae78fe8272889ac888"
 
 [[package]]
-name = "heck"
-version = "0.4.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "95505c38b4572b2d910cecb0281560f54b440a19336cbbcb27bf6ce6adc6f5a8"
-
-[[package]]
 name = "hermit-abi"
 version = "0.2.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1491,8 +1485,10 @@ name = "instally-api"
 version = "0.1.0"
 dependencies = [
  "env_logger",
+ "futures-executor",
  "instally-core",
  "log",
+ "once_cell",
  "tokio",
 ]
 
@@ -1518,7 +1514,6 @@ dependencies = [
  "env_logger",
  "filepath",
  "futures",
- "futures-executor",
  "log",
  "once_cell",
  "parking_lot",
@@ -1526,7 +1521,6 @@ dependencies = [
  "reqwest",
  "serde",
  "struct_field",
- "strum_macros",
  "tempfile",
  "thiserror",
  "tokio",
@@ -2365,12 +2359,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "rustversion"
-version = "1.0.12"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4f3208ce4d8448b3f3e7d168a73f5e0c43a61e32930de3bceeccedb388b6bf06"
-
-[[package]]
 name = "ryu"
 version = "1.0.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2631,19 +2619,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 1.0.109",
-]
-
-[[package]]
-name = "strum_macros"
-version = "0.25.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fe9f3bd7d2e45dcc5e265fbb88d6513e4747d8ef9444cf01a533119bce28a157"
-dependencies = [
- "heck",
- "proc-macro2",
- "quote",
- "rustversion",
- "syn 2.0.22",
 ]
 
 [[package]]
