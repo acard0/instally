@@ -37,17 +37,15 @@ impl Workload for UninstallerWrapper {
             .map_err(|err| WorkloadError::Other(err.to_string()))?
         );  
 
-        // sandwich borrow?
-        let summary = summary_cell.borrow_mut(); 
         let targets = match &self.settings.target_packages {
             Some(opted) => {
-                opted
+                opted.to_owned()
             }
             None => {
-                &summary.packages
-            }
+                summary_cell.borrow().packages.clone()   // Immutable borrow
+            } 
         }; 
-        let mut summary = summary_cell.borrow_mut(); 
+        let mut summary = summary_cell.borrow_mut();
 
         log::info!("Installed packages: {}", summary.packages.iter().map(|e| e.display_name.clone()).collect::<Vec<_>>().join(", ")); 
         log::info!("Packages that will be removed: {}", targets.iter().map(|e| e.display_name.clone()).collect::<Vec<_>>().join(", ")); 
@@ -73,6 +71,8 @@ impl Workload for UninstallerWrapper {
             log::info!("Successfully deleted all packages and their files.");
         }
 
+        self.set_workload_state(UninstallerWorkloadState::Done);
+        self.set_state_progress(100.0);
         Ok(())
     }
 }
