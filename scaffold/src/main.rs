@@ -1,7 +1,4 @@
 #![allow(dead_code, unused_variables)]
-
-//! Show a custom window frame instead of the default OS window chrome decorations.
-
 // #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 
 use instally_core::{workloads::installer::{Product, InstallerOptions}, factory::WorkloadType};
