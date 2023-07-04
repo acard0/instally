@@ -66,8 +66,8 @@ pub fn derive_field(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
         # [derive(Clone, Debug)]
         #derive
         #vis struct #_field_change_struct_ident #ty_generics {
-            current_cloned: #ty #ty_generics,
-            change_cloned: #_field_enum_ident #ty_generics
+            pub current_cloned: #ty #ty_generics,
+            pub change_cloned: #_field_enum_ident #ty_generics
         }        
 
         # [allow(non_camel_case_types)]
