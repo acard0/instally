@@ -108,11 +108,15 @@ impl Product{
     }
 
     pub fn get_uri_to_package(&self, package: &Package) -> String {
-        format!("{}packages\\{}", self.repository, package.archive)
+        format!("{}packages/{}", self.repository, package.archive)
     }
 
-    pub fn get_path_to_self_struct(&self) -> std::path::PathBuf {
+    pub fn get_path_to_self_struct_target(&self) -> std::path::PathBuf {
         std::path::Path::new(&self.target_directory).join("product.xml")
+    }
+
+    pub fn get_path_to_self_struct_local(&self) -> std::path::PathBuf {
+        std::env::current_dir().unwrap().join("product.xml")
     }
 
     pub async fn fetch_repository(&self) -> Result<Repository, RepositoryFetchError> {
@@ -129,7 +133,7 @@ impl Product{
         let payload = quick_xml::se::to_string(&self)?;
 
         let mut file = std::fs::OpenOptions::new().create(true).write(true).
-            read(true).truncate(true).open(&self.get_path_to_self_struct())?;
+            read(true).truncate(true).open(&self.get_path_to_self_struct_target())?;
 
         let xml_decl = b"<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\" ?>\n";
         let mut xml = xml_decl.to_vec();
@@ -192,6 +196,10 @@ impl DerefMut for InstallitionSummary {
 }
 
 impl InstallitionSummary {
+    pub fn read_or_create_target(product: &Product) -> Result<Self, WeakStructParseError> {
+        Self::read_or_create(&std::path::PathBuf::from(&product.target_directory))
+    }
+
     pub fn read_or_create(base: &PathBuf) -> Result<Self, WeakStructParseError> {
         let struct_path = base.join("instally_summary.xml");
 
@@ -229,13 +237,11 @@ impl InstallitionSummary {
     }
     
     pub fn cross_check(&self, packages: &[Package]) -> Result<CrossCheckSummary, RepositoryCrossCheckError> {
-        let summary = Self::read_or_create(&std::path::Path::new("").to_path_buf())?;
-
         let mut updates = vec![];
         let mut map = vec![];
 
         for remote in packages.iter() {
-            match summary.find(remote) {
+            match self.find(remote) {
                 Some(local) => {
                     map.push( PackagePair { local: local.clone(), remote: remote.clone() } );
         
@@ -264,23 +270,32 @@ impl InstallitionSummary {
     } 
 
     pub fn installed(&mut self, package: Package, files: Vec<std::path::PathBuf>) -> &mut Self {
-        //TODO: inspect
-        if self.packages.iter().any(|n| n.name == package.name){
-            return self;
+        let current = self.packages.iter().position(|n| n.name == package.name)
+            .and_then(|f| self.packages.get_mut(f));
+    
+        let remote = PackageInstallition::from_package(&package, files);
+    
+        match current {
+            Some(current) if current.version < remote.version => {
+                current.updated_at = chrono::Local::now();
+                current.version = remote.version;
+                log::info!("~> Updated package: {}", package.name);
+                return self;  
+            }
+            Some(current) if current.version > remote.version => { 
+                current.updated_at = chrono::Local::now();
+                current.version = remote.version;
+                log::info!("<~ Downgraded package: {}", package.name);
+            }
+            Some(current) if current.version == remote.version => { 
+                log::info!("= Reinstalled package: {}", package.name);
+            }
+            _ => {
+                self.packages.push(remote);
+                log::info!("+ Installed package: {}", package.name); 
+            }
         }
-
-        self.packages.push(PackageInstallition {
-            name: package.name,
-            display_name: package.display_name,
-            version: package.version,
-            default: package.default,
-            installed_at: chrono::Local::now(),
-            updated_at: chrono::Local::now(),
-            files: files,
-        });
-
-        log::info!("+ Installed packages: {}", self.packages.iter().map(|e| e.display_name.clone()).collect::<Vec<_>>().join(", "));
-
+    
         self
     }
 
@@ -324,6 +339,20 @@ pub struct PackageInstallition {
     pub updated_at: chrono::DateTime<chrono::Local>,
     pub default: bool,
     pub files: Vec<std::path::PathBuf>
+}
+
+impl PackageInstallition {
+    fn from_package(package: &Package, files: Vec<PathBuf>) -> PackageInstallition {
+        PackageInstallition {
+            name: package.name.clone(),
+            display_name: package.display_name.clone(),
+            version: package.version.clone(),
+            default: package.default,
+            installed_at: chrono::Local::now(),
+            updated_at: chrono::Local::now(),
+            files,
+        }
+    }
 }
 
 #[derive(Debug, Clone)]

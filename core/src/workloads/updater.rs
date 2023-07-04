@@ -45,7 +45,7 @@ impl Workload for UpdaterWrapper {
     async fn run(&self) -> Result<(), WorkloadError> {
         self.set_workload_state(UpdaterWorkloadState::FetchingRemoteTree(self.app.product.name.clone()));  
 
-        let summary = self.get_installition_summary()
+        let summary = self.get_installition_summary_target()
             .map_err(|err| WorkloadError::Other(err.to_string()))?;
     
         let repository = self.fetch_repository().await

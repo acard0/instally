@@ -30,8 +30,13 @@ impl eframe::App for AppWrapper{
                 ui.label(app.get_state_information());
 
                 // state progress
-                let mut value = (app.get_progress() / 100.0) + 0.06;
-                value = f32::min(value, 0.999); // at 1.0 ui stops updating itself, bug
+                let value = match app.is_completed() {
+                    true => 0.999,
+                    _ => {  // at 1.0 ui stops updating itself, bug
+                        let q = (app.get_progress() / 100.0) + 0.06;
+                        f32::min(q, 0.999)
+                    }
+                };
                 
                 // progress bar
                 let progress_bar = ui.add(ProgressBar::new(value)
@@ -40,7 +45,7 @@ impl eframe::App for AppWrapper{
             
                 // progress bar text, centered
                 let mut progress_text = egui::text::LayoutJob::simple_singleline(
-                    format!("%{:.1}", app.get_progress()),
+                    format!("%{:.1}", ((value + 0.001) * 100.0)),
                     egui::FontId::new(11.0, egui::FontFamily::default()),
                     egui::Color32::WHITE
                 );

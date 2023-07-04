@@ -35,8 +35,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     log::info!("Payload xml: {:?}", quick_xml::se::to_string(&product));
 
-    _ = factory::run(&product, WorkloadType::Installer(InstallerOptions::default()), true)
-        .handle.await;
+    _ = factory::run(
+        &product,
+        WorkloadType::Installer(InstallerOptions::default()),
+        true
+    ).handle.await;
 
     Ok(())
 }

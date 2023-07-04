@@ -116,12 +116,11 @@ pub trait Worker: Workload + ContextAccessor {
     }
 
     async fn install_package(&self, package: &Package, package_file: &PackageFile) -> Result<(), PackageInstallError> {
-
         let product = self.get_product();
         let progress_closure = self.create_progress_closure();
         let files = archiving::zip_read::extract_to(&package_file.handle.as_file(), product.get_path_to_package(package), &progress_closure)?;
         
-        self.get_installition_summary()?
+        self.get_installition_summary_target()?
             .installed(package.clone(), files)
             .save()?;
 
@@ -145,8 +144,13 @@ pub trait Worker: Workload + ContextAccessor {
         })
     }
 
-    fn get_installition_summary(&self) -> Result<InstallitionSummary, WeakStructParseError> {
-        InstallitionSummary::read_or_create(&std::path::PathBuf::from(self.get_product().target_directory))
+    fn get_installition_summary_local(&self) -> Result<InstallitionSummary, WeakStructParseError> {
+        let current = std::env::current_dir().unwrap();
+        InstallitionSummary::read_or_create(&current)
+    }
+
+    fn get_installition_summary_target(&self) -> Result<InstallitionSummary, WeakStructParseError> {
+        InstallitionSummary::read_or_create_target(&self.get_product())
     }
 }
 

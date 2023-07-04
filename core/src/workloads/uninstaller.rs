@@ -33,7 +33,7 @@ impl ContextAccessor for UninstallerWrapper {
 #[async_trait] 
 impl Workload for UninstallerWrapper {
     async fn run(&self) -> Result<(), WorkloadError> {
-        let summary_cell = RefCell::new(self.get_installition_summary()
+        let summary_cell = RefCell::new(self.get_installition_summary_target()
             .map_err(|err| WorkloadError::Other(err.to_string()))?
         );  
 

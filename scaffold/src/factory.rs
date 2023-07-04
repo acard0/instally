@@ -2,10 +2,13 @@
 use instally_core::{factory::{WorkloadType, Executor}, workloads::{abstraction::InstallyApp, installer::Product}};
 
 pub fn run(product_meta: &Product, settings: WorkloadType, do_spawn_ui: bool) -> Executor {
-    let executor = instally_core::factory::run(product_meta, settings);
+    let executor = instally_core::factory::run(
+        product_meta,
+        settings
+    );
     
     if do_spawn_ui {
-        spawn_ui(executor.ctx.clone());
+        spawn_ui(executor.app.clone());
     }
 
     executor
