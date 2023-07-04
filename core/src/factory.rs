@@ -1,5 +1,5 @@
 
-use crate::{workloads::{installer::{InstallerOptions, Product, InstallerWrapper, InstallerWorkloadState}, uninstaller::{UninstallerOptions, UninstallerWrapper, UninstallerWorkloadState}, abstraction::{InstallyApp, WorkloadResult, Worker, Workload}, updater::{UpdaterWrapper, UpdaterWorkloadState, UpdaterOptions}}};
+use crate::{workloads::{installer::{InstallerOptions, Product, InstallerWrapper, InstallerWorkloadState}, uninstaller::{UninstallerOptions, UninstallerWrapper, UninstallerWorkloadState}, abstraction::{InstallyApp, WorkloadResult, Worker, Workload}, updater::{UpdaterWrapper, UpdaterWorkloadState, UpdaterOptions}}, extensions::future::FutureSyncExt};
 
 pub enum WorkloadType {
     Installer(InstallerOptions),
@@ -12,6 +12,24 @@ pub struct Executor {
     pub app: InstallyApp
 }
 
+pub struct RuntimeExecutor {
+    pub executor: Executor,
+    pub runtime: tokio::runtime::Runtime
+}
+
+pub fn run_tokio(product_meta: &Product, settings: WorkloadType) -> RuntimeExecutor {
+    let runtime = tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .build()
+        .unwrap();
+
+    let executor = runtime.block_on(async move {
+        run(product_meta, settings)
+    });
+
+    RuntimeExecutor { executor, runtime }
+}
+
 pub fn run(product_meta: &Product, settings: WorkloadType) -> Executor {
     let app = InstallyApp::new(product_meta.clone());
 
@@ -22,18 +40,18 @@ pub fn run(product_meta: &Product, settings: WorkloadType) -> Executor {
     panic!("No running tokio runtime found.")
 }
 
-pub fn run_inner(app: InstallyApp, settings: WorkloadType) -> tokio::task::JoinHandle<WorkloadResult> {
+fn run_inner(app: InstallyApp, settings: WorkloadType) -> tokio::task::JoinHandle<WorkloadResult> {
     let join = match settings {
         WorkloadType::Installer(r) => {
-            println!("Spawning installer workload thread");
+            log::info!("Spawning installer workload thread");
             installer(InstallerWrapper::new_with_opts(app.clone(), r))
         },
         WorkloadType::Updater(r) => {
-            println!("Spawning updater workload thread");
+            log::info!("Spawning updater workload thread");
             updater(UpdaterWrapper::new_with_opts(app.clone(), r))
         },
         WorkloadType::Uninstaller(r) => {
-            println!("Spawning uninstaller workload thread");
+            log::info!("Spawning uninstaller workload thread");
             uninstaller(UninstallerWrapper::new_with_opts(app.clone(), r))
         },
     };
@@ -43,26 +61,25 @@ pub fn run_inner(app: InstallyApp, settings: WorkloadType) -> tokio::task::JoinH
 
 fn installer(wrapper: InstallerWrapper) -> tokio::task::JoinHandle<WorkloadResult> {
     tokio::spawn(async move {
-        println!("Running installer workload");
+        log::info!("Running installer workload");
 
         let workload = wrapper.run().await;
     
         match workload {
             Ok(()) => {
                 log::info!("Workload completed");
-                println!("Workload completed");
 
-                wrapper.set_result(WorkloadResult::Ok);
                 wrapper.set_workload_state(InstallerWorkloadState::Done);
+                wrapper.set_result(WorkloadResult::Ok);
                 WorkloadResult::Ok
             },
             Err(err) => {
                 log::error!("\n{err:?}");
-                println!("Workload failed. \n{err:?}");
+                log::info!("Workload failed. \n{err:?}");
 
                 let result = WorkloadResult::Error(err.to_string());
-                wrapper.set_result(result.clone());
                 wrapper.set_workload_state(InstallerWorkloadState::Interrupted(err.to_string()));
+                wrapper.set_result(result.clone());
                 result
             }
         }
@@ -71,26 +88,25 @@ fn installer(wrapper: InstallerWrapper) -> tokio::task::JoinHandle<WorkloadResul
 
 fn updater(wrapper: UpdaterWrapper) -> tokio::task::JoinHandle<WorkloadResult> {
     tokio::spawn(async move {
-        println!("Running updater workload");
+        log::info!("Running updater workload");
 
         let workload_result = wrapper.run().await;
     
         match workload_result {
             Ok(()) => {
                 log::info!("Workload completed");
-                println!("Workload completed");
                 
-                wrapper.set_result(WorkloadResult::Ok);
                 wrapper.set_workload_state(UpdaterWorkloadState::Done);
+                wrapper.set_result(WorkloadResult::Ok);
                 WorkloadResult::Ok
             },
             Err(err) => {
                 log::error!("\n{err:?}");
-                println!("Workload failed. \n{err:?}");
+                log::info!("Workload failed. \n{err:?}");
 
                 let result = WorkloadResult::Error(err.to_string());
-                wrapper.set_result(result.clone());
                 wrapper.set_workload_state(UpdaterWorkloadState::Interrupted(err.to_string()));
+                wrapper.set_result(result.clone());
                 result
             }
             
@@ -100,26 +116,25 @@ fn updater(wrapper: UpdaterWrapper) -> tokio::task::JoinHandle<WorkloadResult> {
 
 fn uninstaller(wrapper: UninstallerWrapper) -> tokio::task::JoinHandle<WorkloadResult> {
     tokio::spawn(async move {
-        println!("Running uninstaller workload");
+        log::info!("Running uninstaller workload");
 
         let workload_result = wrapper.run().await;
     
         match workload_result {
             Ok(()) => {
                 log::info!("Workload completed");
-                println!("Workload completed");
 
-                wrapper.set_result(WorkloadResult::Ok);
                 wrapper.set_workload_state(UninstallerWorkloadState::Done);
+                wrapper.set_result(WorkloadResult::Ok);
                 WorkloadResult::Ok
             },
             Err(err) => {
                 log::error!("\n{err:?}");
-                println!("Workload failed. \n{err:?}");
+                log::info!("Workload failed. \n{err:?}");
 
                 let result = WorkloadResult::Error(err.to_string());
-                wrapper.set_result(result.clone());
                 wrapper.set_workload_state(UninstallerWorkloadState::Interrupted(err.to_string()));
+                wrapper.set_result(result.clone());
                 result
             }
         }
