@@ -49,5 +49,6 @@ where F: Fn(f32)
         progress_callback(progress);
     }
 
+    progress_callback(100.0);
     Ok(paths)
 }

@@ -75,6 +75,7 @@ impl Workload for InstallerWrapper {
         }
 
         self.set_workload_state(InstallerWorkloadState::Done);
+        self.set_state_progress(100.0);
         Ok(())
     }
 }
@@ -296,6 +297,7 @@ impl InstallitionSummary {
             }
         }
     
+
         self
     }
 

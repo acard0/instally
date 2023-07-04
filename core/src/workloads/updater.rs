@@ -85,6 +85,7 @@ impl Workload for UpdaterWrapper {
         }
 
         self.set_workload_state(UpdaterWorkloadState::Done);
+        self.set_state_progress(100.0);
         Ok(())
     }
 }

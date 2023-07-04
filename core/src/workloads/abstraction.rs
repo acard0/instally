@@ -1,4 +1,4 @@
-use std::{sync::Arc, collections::HashMap, fmt::Display};
+use std::{sync::Arc, collections::HashMap, fmt::{Display, Formatter}};
 
 use async_trait::async_trait;
 use once_cell::sync::Lazy;
@@ -40,6 +40,15 @@ pub enum WorkloadResult {
     Error(String)
 }
 
+impl Display for WorkloadResult {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Error(err) => write!(f, "{err:?}"),
+            _ => write!(f, "Ok")
+        }
+    }
+}
+
 #[derive(struct_field::StructField, Clone, Debug)]
 pub struct AppContext {
     frame_count: u64, 
@@ -52,7 +61,7 @@ impl AppContextNotifiable for AppContext {
     fn on_update(&self, field: AppContextField) {
         CONTEXT_CALLBACKS.lock().iter().for_each(|f| {
             let (_, callback) = f;
-            callback(AppContextChange { current_cloned: self.clone(), change_cloned:  field.clone()})
+            callback(AppContextChange { state_cloned: self.clone(), field_cloned:  field.clone()})
         })
     }
 
