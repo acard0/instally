@@ -153,6 +153,13 @@ pub struct Repository {
     pub packages: Vec<Package>,
 }
 
+impl Repository {
+    pub fn get_package(&self, package_name: &str) -> Option<Package> {
+        self.packages.iter().find(|e| e.name == package_name)
+            .map(|f| f.clone())
+    }
+}
+
 #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "PascalCase")]
 pub struct Package {
