@@ -29,9 +29,9 @@ impl<T> CallResult<T> {
 #[repr(C)]
 #[derive(Debug, Clone)]
 pub struct CPackageVersioning {
-    name: *mut i8,
-    v_current: *mut i8,
-    v_latest: *mut i8,
+    name: *const i8,
+    v_current: *const i8,
+    v_latest: *const i8,
     outdated: bool
 }
 
