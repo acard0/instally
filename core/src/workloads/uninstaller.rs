@@ -2,7 +2,7 @@ use std::{fmt::{Formatter, Display}, cell::RefCell};
 
 use async_trait::async_trait;
 
-use super::{abstraction::{ContextAccessor, Worker, Workload, ContextArcM, AppWrapper}, installer::{Product, PackageInstallition}, errors::WorkloadError};
+use super::{abstraction::{ContextAccessor, Worker, Workload, ContextArcM, AppWrapper}, installer::{Product, PackageInstallition}, error::WorkloadError};
 
 
 pub type UninstallerWrapper = AppWrapper<UninstallerOptions>;

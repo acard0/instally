@@ -1,9 +1,9 @@
 
 use std::{fmt::{Display, Formatter}, ops::{Deref, DerefMut}, io::{Read, Write, Seek}, path::PathBuf};
 
-use crate::{workloads::errors::WorkloadError, http::client, helpers::versioning::version_compare};
+use crate::{workloads::error::WorkloadError, http::client, helpers::versioning::version_compare};
 
-use super::{abstraction::{Worker, ContextAccessor, Workload, ContextArcM, AppWrapper}, errors::{WeakStructParseError, PackageUninstallError, RepositoryCrossCheckError, RepositoryFetchError}, updater::{PackagePair, CrossCheckSummary}};
+use super::{abstraction::{Worker, ContextAccessor, Workload, ContextArcM, AppWrapper}, error::{WeakStructParseError, PackageUninstallError, RepositoryCrossCheckError, RepositoryFetchError}, updater::{PackagePair, CrossCheckSummary}};
 
 use serde::{Deserialize, Serialize};
 use async_trait::async_trait;

@@ -1,7 +1,7 @@
 
 use std::{fmt::{Display, Formatter}};
 
-use super::{abstraction::*, errors::*, installer::{Product, PackageInstallition, Package}};
+use super::{abstraction::*, error::*, installer::{Product, PackageInstallition, Package}};
 
 use async_trait::async_trait;
 
