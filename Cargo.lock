@@ -1525,6 +1525,7 @@ dependencies = [
  "thiserror",
  "tokio",
  "walkdir",
+ "windows 0.48.0",
  "zip",
 ]
 
