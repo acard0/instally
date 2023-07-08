@@ -1,10 +1,10 @@
-use std::{sync::Arc, collections::HashMap, fmt::{Display, Formatter}};
+use std::{sync::Arc, collections::HashMap, fmt::{Display, Formatter}, path::Path};
 
 use async_trait::async_trait;
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
 
-use crate::{http::{client::{self, HttpStreamError}}, archiving};
+use crate::{http::{client::{self, HttpStreamError}}, archiving, target::error::{CreateSymlinkError, CreateAppEntryError}};
 use super::{installer::{Product, Repository, Package, PackageFile, InstallitionSummary}, error::*};
 
 pub type ArcM<T> = Arc<Mutex<T>>;
@@ -146,13 +146,6 @@ pub trait Worker: Workload + ContextAccessor {
         client::get_text(url, progress_closure).await
     }
 
-    fn create_progress_closure(&self) -> Box<dyn Fn(f32) + Send> {
-        let arc = self.get_context();
-        Box::new(move |progress: f32| {
-            arc.lock().state_progress = progress; 
-        })
-    }
-
     fn get_installition_summary_local(&self) -> Result<InstallitionSummary, WeakStructParseError> {
         let current = std::env::current_dir().unwrap();
         InstallitionSummary::read_or_create(&current)
@@ -160,6 +153,21 @@ pub trait Worker: Workload + ContextAccessor {
 
     fn get_installition_summary_target(&self) -> Result<InstallitionSummary, WeakStructParseError> {
         InstallitionSummary::read_or_create_target(&self.get_product())
+    }
+
+    fn symlink_file<P: AsRef<Path>, Q: AsRef<Path>>(original: P, link_dir: Q, link_name: &str) -> Result<(), CreateSymlinkError> {
+        crate::sys::symlink_file(original, link_dir, link_name)
+    }
+
+    fn create_app_entry(app: Product) -> Result<(), CreateAppEntryError> {
+        crate::sys::create_app_entry(app)
+    }
+
+    fn create_progress_closure(&self) -> Box<dyn Fn(f32) + Send> {
+        let arc = self.get_context();
+        Box::new(move |progress: f32| {
+            arc.lock().state_progress = progress; 
+        })
     }
 }
 
