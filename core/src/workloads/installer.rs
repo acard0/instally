@@ -74,6 +74,7 @@ impl Workload for InstallerWrapper {
 
         }
 
+            .map_err(|err| WorkloadError::Other(format!("Failed to create app entry: {}", err.to_string())))?;
         self.set_workload_state(InstallerWorkloadState::Done);
         self.set_state_progress(100.0);
         Ok(())
