@@ -34,6 +34,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     log::info!("Payload xml: {:?}", quick_xml::se::to_string(&product));
+    instally_core::helpers::process::terminate_processes_under_folder(&product.target_directory)
+        .expect("Failed to terminate processes under target directory!");
+
+    let args = parse_args(&product).await;
 
     _ = factory::run(
         &product,
