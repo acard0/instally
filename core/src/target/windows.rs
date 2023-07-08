@@ -8,6 +8,7 @@ use windows::Win32::System::Registry::HKEY_CURRENT_USER;
 use windows::Win32::System::Registry::REG_SZ;
 use windows::Win32::System::Registry::RegCloseKey;
 use windows::Win32::System::Registry::RegCreateKeyA;
+use windows::Win32::System::Registry::RegDeleteKeyA;
 use windows::Win32::System::Registry::RegSetValueExA;
 use windows::Win32::UI::Shell::IShellLinkA;
 use windows::core::BSTR;
@@ -20,7 +21,7 @@ use std::path::Path;
 use crate::helpers::like::CStringLike;
 use crate::workloads::installer::Product;
 
-use super::error::CreateAppEntryError;
+use super::error::AppEntryError;
 use super::error::CreateSymlinkError;
 
 pub fn symlink_file<P: AsRef<Path>, Q: AsRef<Path>>(original: P, link_dir: Q, link_name: &str) -> Result<(), CreateSymlinkError> {
@@ -55,6 +56,12 @@ pub fn create_app_entry(app: Product) -> Result<(), CreateAppEntryError> {
     }
 
     Ok(())
+}
+
+pub fn delete_app_entry(app: &Product) -> Result<(), AppEntryError> {
+    unsafe {
+        AppEntryError::from_win32(RegDeleteKeyA(HKEY_CURRENT_USER, PCSTR::from_raw(format!("Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{}", app.name).as_ptr_nul())))
+    }    
 }
 
 impl CreateAppEntryError {

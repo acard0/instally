@@ -42,7 +42,7 @@ impl Workload for UninstallerWrapper {
                 opted.to_owned()
             }
             None => {
-                summary_cell.borrow().packages.clone()   // Immutable borrow
+                summary_cell.borrow().packages.clone()
             } 
         }; 
         let mut summary = summary_cell.borrow_mut();
@@ -68,7 +68,13 @@ impl Workload for UninstallerWrapper {
         };
 
         if all_done {
-            log::info!("Successfully deleted all packages and their files.");
+            log::info!("Successfully deleted all target packages and their files.");
+        }
+
+        if summary.packages.len() == 0 {
+            crate::sys::delete_app_entry(&self.get_product())
+                .map_err(|err| WorkloadError::Other(format!("Failed to delete app entry. Trace: {}", err)))?;
+            log::info!("All packages and their files are deleted. App entry is deleted too.");
         }
 
         self.set_workload_state(UninstallerWorkloadState::Done);
