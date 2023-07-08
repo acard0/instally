@@ -1,6 +1,5 @@
 #![allow(dead_code, unused_variables)]
 
-mod like;
 mod macros;
 mod ffi;
 
