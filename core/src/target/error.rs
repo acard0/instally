@@ -2,7 +2,7 @@ use std::io;
 
 
 #[derive(thiserror::Error, Debug)]
-pub enum CreateAppEntryError {
+pub enum AppEntryError {
     #[error("{0}")]
     OsError(String)
 }

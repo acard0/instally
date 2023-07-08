@@ -4,7 +4,7 @@ use async_trait::async_trait;
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
 
-use crate::{http::{client::{self, HttpStreamError}}, archiving, target::error::{CreateSymlinkError, CreateAppEntryError}};
+use crate::{http::{client::{self, HttpStreamError}}, archiving, target::error::{CreateSymlinkError, AppEntryError}};
 use super::{installer::{Product, Repository, Package, PackageFile, InstallitionSummary}, error::*};
 
 pub type ArcM<T> = Arc<Mutex<T>>;
@@ -159,7 +159,7 @@ pub trait Worker: Workload + ContextAccessor {
         crate::sys::symlink_file(original, link_dir, link_name)
     }
 
-    fn create_app_entry(app: Product) -> Result<(), CreateAppEntryError> {
+    fn create_app_entry(&self, app: &Product) -> Result<(), AppEntryError> {
         crate::sys::create_app_entry(app)
     }
 

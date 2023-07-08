@@ -43,16 +43,16 @@ pub fn symlink_file<P: AsRef<Path>, Q: AsRef<Path>>(original: P, link_dir: Q, li
     Ok(())  
 }
 
-pub fn create_app_entry(app: Product) -> Result<(), CreateAppEntryError> {
+pub fn create_app_entry(app: &Product) -> Result<(), AppEntryError> {
     let maintinance_tool_path = Path::join(Path::new(&app.target_directory), "maintinance.exe");
 
     unsafe {
         let mut hkey = HKEY::default();  
-        CreateAppEntryError::from_win32(RegCreateKeyA(HKEY_CURRENT_USER, PCSTR::from_raw(format!("Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{}", app.name).as_ptr_nul()),&mut hkey as *mut _))?;
-        CreateAppEntryError::from_win32(RegSetValueExA(hkey, PCSTR::from_raw("DisplayName".as_ptr_nul()), 0, REG_SZ, Some(app.name.as_bytes())))?;
-        CreateAppEntryError::from_win32(RegSetValueExA(hkey, PCSTR::from_raw("InstallLocation".as_ptr_nul()), 0, REG_SZ,Some(app.target_directory.as_bytes())))?;
-        CreateAppEntryError::from_win32(RegSetValueExA(hkey, PCSTR::from_raw("UninstallString".as_ptr_nul()), 0, REG_SZ, Some(format!(r#"{} /uninstall"#, maintinance_tool_path.to_str().unwrap()).as_bytes())))?;
-        CreateAppEntryError::from_win32(RegCloseKey(hkey))?;
+        AppEntryError::from_win32(RegCreateKeyA(HKEY_CURRENT_USER, PCSTR::from_raw(format!("Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{}", app.name).as_ptr_nul()),&mut hkey as *mut _))?;
+        AppEntryError::from_win32(RegSetValueExA(hkey, PCSTR::from_raw("DisplayName".as_ptr_nul()), 0, REG_SZ, Some(app.name.as_bytes())))?;
+        AppEntryError::from_win32(RegSetValueExA(hkey, PCSTR::from_raw("InstallLocation".as_ptr_nul()), 0, REG_SZ,Some(app.target_directory.as_bytes())))?;
+        AppEntryError::from_win32(RegSetValueExA(hkey, PCSTR::from_raw("UninstallString".as_ptr_nul()), 0, REG_SZ, Some(format!(r#"{} /uninstall"#, maintinance_tool_path.to_str().unwrap()).as_bytes())))?;
+        AppEntryError::from_win32(RegCloseKey(hkey))?;
     }
 
     Ok(())
@@ -64,14 +64,14 @@ pub fn delete_app_entry(app: &Product) -> Result<(), AppEntryError> {
     }    
 }
 
-impl CreateAppEntryError {
-    pub fn from_win32(value: WIN32_ERROR) -> Result<(), CreateAppEntryError> {
+impl AppEntryError {
+    pub fn from_win32(value: WIN32_ERROR) -> Result<(), AppEntryError> {
         if value.0 == 0 {
             return Ok(());
         }
 
         let err = windows::core::Error::from(value.to_hresult());
-        Err(CreateAppEntryError::OsError(err.to_string()))
+        Err(AppEntryError::OsError(err.to_string()))
     }
 }
 
@@ -81,8 +81,8 @@ impl std::convert::From<windows::core::Error> for CreateSymlinkError {
     }
 }
 
-impl std::convert::From<windows::core::Error> for CreateAppEntryError {
+impl std::convert::From<windows::core::Error> for AppEntryError {
     fn from(value: windows::core::Error) -> Self {
-        CreateAppEntryError::OsError(value.to_string())
+        AppEntryError::OsError(value.to_string())
     }
 }
