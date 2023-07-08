@@ -46,7 +46,7 @@ impl Workload for InstallerWrapper {
         std::fs::create_dir_all(&self.app.product.target_directory)
             .map_err(|err| WorkloadError::Other(err.to_string()))?;
 
-        // api uses product, resovles it from filesystem
+        // api uses product weak struct, resolves it from filesystem
         self.get_product().dump()
             .map_err(|e| WorkloadError::Other(e.to_string()))?;
 
@@ -74,7 +74,9 @@ impl Workload for InstallerWrapper {
 
         }
 
+        self.create_app_entry(&self.get_product())
             .map_err(|err| WorkloadError::Other(format!("Failed to create app entry: {}", err.to_string())))?;
+
         self.set_workload_state(InstallerWorkloadState::Done);
         self.set_state_progress(100.0);
         Ok(())
@@ -242,7 +244,7 @@ impl InstallitionSummary {
     
     pub fn find(&self, package: &Package) -> Option<PackageInstallition> {
         self.packages.iter().find(|n| n.name == package.name)
-        .map(|f| f.clone())
+            .map(|f| f.clone())
     }
     
     pub fn cross_check(&self, packages: &[Package]) -> Result<CrossCheckSummary, RepositoryCrossCheckError> {

@@ -1,5 +1,5 @@
 
-use crate::{workloads::{installer::{InstallerOptions, Product, InstallerWrapper, InstallerWorkloadState}, uninstaller::{UninstallerOptions, UninstallerWrapper, UninstallerWorkloadState}, abstraction::{InstallyApp, WorkloadResult, Worker, Workload}, updater::{UpdaterWrapper, UpdaterWorkloadState, UpdaterOptions}}, extensions::future::FutureSyncExt};
+use crate::{workloads::{installer::{InstallerOptions, Product, InstallerWrapper, InstallerWorkloadState}, uninstaller::{UninstallerOptions, UninstallerWrapper, UninstallerWorkloadState}, abstraction::{InstallyApp, WorkloadResult, Worker, Workload}, updater::{UpdaterWrapper, UpdaterWorkloadState, UpdaterOptions}}};
 
 pub enum WorkloadType {
     Installer(InstallerOptions),
