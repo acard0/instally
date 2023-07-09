@@ -5,10 +5,9 @@ work in progress.
 ```
 [x] installer
 [x] updater
-[*] uninstaller / needs test + automatic process termination
-[*] binarygen / needs test
-[] ui refactor
-[] basic ffi api
+[x] uninstaller
+[x] binarygen
+[x] basic ffi api
   - update check, uninstall, add/remove package
 [] scripting layer
   - events after/before | install/update/uninstall etc
