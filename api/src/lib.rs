@@ -115,7 +115,7 @@ pub unsafe extern "C" fn install_package(m_packages: *mut ByteBuffer, state_call
 fn execute_blocking(product_meta: &Product, settings: WorkloadType, state_callback: extern "C" fn(CAppState)) {
     let runtime_executor = factory::run_tokio(&product_meta, settings);
 
-    runtime_executor.executor.app.context.lock().subscribe(Box::new(move |f| {
+    runtime_executor.executor.app.get_context().lock().subscribe(Box::new(move |f| {
         state_callback(f.state_cloned.clone().into());
         println!("change. state: {:?}, changed: {:?}, progress: {}", f.state_cloned.get_state(), f.field_cloned, f.state_cloned.get_progress());
     }));

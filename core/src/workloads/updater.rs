@@ -1,7 +1,9 @@
 
-use std::{fmt::{Display, Formatter}};
+use std::fmt::{Formatter, Display};
 
-use super::{abstraction::*, error::*, installer::{Product, PackageInstallition, Package}};
+use crate::workloads::installer::PackageScriptOptional;
+
+use super::{abstraction::*, error::*, installer::{PackageInstallition, Package}};
 
 use async_trait::async_trait;
 
@@ -28,35 +30,24 @@ impl Default for UpdaterOptions {
     }
 }
 
-impl Worker for UpdaterWrapper { }
-
-impl ContextAccessor for UpdaterWrapper {
-    fn get_context(&self) -> ContextArcM {
-        self.app.get_context()
-    }
-
-    fn get_product(&self) -> Product {
-        self.app.product.clone()
-    }
-}
-
 #[async_trait]
 impl Workload for UpdaterWrapper {
     async fn run(&self) -> Result<(), WorkloadError> {
         let global = self.app.get_global_script().await?;
         global.if_exist(|s| Ok(s.invoke_before_update()))?;
 
+        self.app.set_workload_state(UpdaterWorkloadState::FetchingRemoteTree(self.app.get_product().name.clone()));  
 
-        let summary = self.get_installition_summary_target()
+        let summary = self.app.get_installition_summary_target()
             .map_err(|err| WorkloadError::Other(err.to_string()))?;
     
-        let repository = self.fetch_repository().await
+        let repository = self.app.fetch_repository().await
             .map_err(|err| WorkloadError::Other(err.to_string()))?;
 
         let state = summary.cross_check(&repository.packages)
             .map_err(|err| WorkloadError::Other(err.to_string()))?;
 
-        log::info!("Starting to update {}", &self.app.product.name);
+        log::info!("Starting to update {}", &self.app.get_product().name);
         log::info!("Installed packages: {}", summary.packages.iter().map(|e| e.display_name.clone()).collect::<Vec<_>>().join(", "));
         log::info!("Packages that are outdated: {}", state.updates.iter().map(|e| e.local.display_name.clone()).collect::<Vec<_>>().join(", "));
 
@@ -80,17 +71,18 @@ impl Workload for UpdaterWrapper {
             }
 
             log::info!("Starting to update {}, installed: {}, new: {}.", local.display_name, local.version, remote.version);
-            log::info!("Downloading the package file from {}", &self.app.product.get_uri_to_package(&remote));
-            self.set_workload_state(UpdaterWorkloadState::DownloadingComponent(remote.display_name.clone()));
+            log::info!("Downloading the package file from {}", &self.app.get_product().get_uri_to_package(&remote));
+            self.app.set_workload_state(UpdaterWorkloadState::DownloadingComponent(remote.display_name.clone()));
 
-            let package_file = self.get_package(&remote).await
+            let package_file = self.app.get_package(&remote).await
                 .map_err(|err| WorkloadError::Other(err.to_string()))?;
 
             log::info!("Decompression of {}", &remote.display_name);
-            self.set_workload_state(UpdaterWorkloadState::InstallingComponent(remote.display_name.clone()));
+            self.app.set_workload_state(UpdaterWorkloadState::InstallingComponent(remote.display_name.clone()));
 
-            self.install_package(&remote, &package_file).await
+            self.app.install_package(&remote, &package_file).await
                 .map_err(|err| WorkloadError::Other(err.to_string()))?;
+
             script.if_exist(|s| {
                 s.invoke_after_update();
                 Ok(())
@@ -99,6 +91,8 @@ impl Workload for UpdaterWrapper {
 
         global.if_exist(|s| Ok(s.invoke_before_update()))?;
 
+        self.app.set_workload_state(UpdaterWorkloadState::Done);
+        self.app.set_state_progress(100.0);
         Ok(())
     }
 }

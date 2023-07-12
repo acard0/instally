@@ -1,5 +1,5 @@
 
-use crate::{workloads::{installer::{InstallerOptions, Product, InstallerWrapper, InstallerWorkloadState}, uninstaller::{UninstallerOptions, UninstallerWrapper, UninstallerWorkloadState}, abstraction::{InstallyApp, WorkloadResult, Worker, Workload}, updater::{UpdaterWrapper, UpdaterWorkloadState, UpdaterOptions}}};
+use crate::workloads::{installer::{InstallerOptions, Product, InstallerWrapper, InstallerWorkloadState}, uninstaller::{UninstallerOptions, UninstallerWrapper, UninstallerWorkloadState}, abstraction::{InstallyApp, Workload, WorkloadResult}, updater::{UpdaterWrapper, UpdaterWorkloadState, UpdaterOptions}};
 
 pub enum WorkloadType {
     Installer(InstallerOptions),
@@ -69,8 +69,8 @@ fn installer(wrapper: InstallerWrapper) -> tokio::task::JoinHandle<WorkloadResul
             Ok(()) => {
                 log::info!("Workload completed");
 
-                wrapper.set_workload_state(InstallerWorkloadState::Done);
-                wrapper.set_result(WorkloadResult::Ok);
+                wrapper.app.set_workload_state(InstallerWorkloadState::Done.to_string());
+                wrapper.app.set_result(WorkloadResult::Ok);
                 WorkloadResult::Ok
             },
             Err(err) => {
@@ -78,8 +78,8 @@ fn installer(wrapper: InstallerWrapper) -> tokio::task::JoinHandle<WorkloadResul
                 log::info!("Workload failed. \n{err:?}");
 
                 let result = WorkloadResult::Error(err.to_string());
-                wrapper.set_workload_state(InstallerWorkloadState::Interrupted(err.to_string()));
-                wrapper.set_result(result.clone());
+                wrapper.app.set_workload_state(InstallerWorkloadState::Interrupted(err.to_string()).to_string());
+                wrapper.app.set_result(result.clone());
                 result
             }
         }
@@ -96,8 +96,8 @@ fn updater(wrapper: UpdaterWrapper) -> tokio::task::JoinHandle<WorkloadResult> {
             Ok(()) => {
                 log::info!("Workload completed");
                 
-                wrapper.set_workload_state(UpdaterWorkloadState::Done);
-                wrapper.set_result(WorkloadResult::Ok);
+                wrapper.app.set_workload_state(UpdaterWorkloadState::Done);
+                wrapper.app.set_result(WorkloadResult::Ok);
                 WorkloadResult::Ok
             },
             Err(err) => {
@@ -105,8 +105,8 @@ fn updater(wrapper: UpdaterWrapper) -> tokio::task::JoinHandle<WorkloadResult> {
                 log::info!("Workload failed. \n{err:?}");
 
                 let result = WorkloadResult::Error(err.to_string());
-                wrapper.set_workload_state(UpdaterWorkloadState::Interrupted(err.to_string()));
-                wrapper.set_result(result.clone());
+                wrapper.app.set_workload_state(UpdaterWorkloadState::Interrupted(err.to_string()));
+                wrapper.app.set_result(result.clone());
                 result
             }
             
@@ -124,8 +124,8 @@ fn uninstaller(wrapper: UninstallerWrapper) -> tokio::task::JoinHandle<WorkloadR
             Ok(()) => {
                 log::info!("Workload completed");
 
-                wrapper.set_workload_state(UninstallerWorkloadState::Done);
-                wrapper.set_result(WorkloadResult::Ok);
+                wrapper.app.set_workload_state(UninstallerWorkloadState::Done);
+                wrapper.app.set_result(WorkloadResult::Ok);
                 WorkloadResult::Ok
             },
             Err(err) => {
@@ -133,8 +133,8 @@ fn uninstaller(wrapper: UninstallerWrapper) -> tokio::task::JoinHandle<WorkloadR
                 log::info!("Workload failed. \n{err:?}");
 
                 let result = WorkloadResult::Error(err.to_string());
-                wrapper.set_workload_state(UninstallerWorkloadState::Interrupted(err.to_string()));
-                wrapper.set_result(result.clone());
+                wrapper.app.set_workload_state(UninstallerWorkloadState::Interrupted(err.to_string()));
+                wrapper.app.set_result(result.clone());
                 result
             }
         }

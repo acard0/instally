@@ -1,9 +1,15 @@
-use crate::http::client::HttpStreamError;
+use crate::{http::client::HttpStreamError, scripting::error::IJSError};
 
 #[derive(thiserror::Error, Debug)]
 pub enum WorkloadError {
     #[error("{0}")]
-    Other(String)
+    Other(String),
+
+    #[error("IJS error accured for package. {0}")]
+    IJSError(#[from] ScriptError),
+
+    #[error("Could not fetch remote tree. {0}")]
+    RepositoryFetchError(#[from] RepositoryFetchError)
 }
 
 #[derive(thiserror::Error, Debug)]
@@ -35,6 +41,20 @@ pub enum PackageDownloadError {
     IOError(#[from] std::io::Error)
 }
 
+#[derive(thiserror::Error, Debug)]
+pub enum ScriptError {
+    #[error("Attempted to pull the script from net but {0}")]
+    HttpStreamError(#[from] HttpStreamError),
+
+    #[error("Attempted to parse the script from file but {0}")]
+    IOError(#[from] std::io::Error),
+
+    #[error("Attempted to evaluate the script but {0}")]
+    IJSError(#[from] IJSError),
+
+    #[error("{0}")]
+    Other(String)
+}
 
 #[derive(thiserror::Error, Debug)]
 pub enum PackageInstallError {

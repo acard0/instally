@@ -8,19 +8,11 @@ pub trait FutureSyncExt {
 impl<F, T> FutureSyncExt for F where F: Future<Output = T> {
     type Output = T;
     fn wait(self) -> Self::Output {
-        
-        if let Ok(handle) = tokio::runtime::Handle::try_current() {
-            return handle.block_on(async {
+        tokio::task::block_in_place(move || {
+            tokio::runtime::Handle::current()
+            .block_on(async move {
                 self.await
-            });
-        }
-        
-        tokio::runtime::Builder::new_multi_thread()
-        .enable_all()
-        .build()
-        .unwrap()
-        .block_on(async {
-            self.await
+            })
         })
    }
 }

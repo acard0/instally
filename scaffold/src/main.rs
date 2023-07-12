@@ -10,7 +10,6 @@ mod app;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-
     let rust_log = std::env::var("RUST_LOG").unwrap_or("info".into()); 
     std::env::set_var("RUST_LOG", rust_log);  
     env_logger::init();

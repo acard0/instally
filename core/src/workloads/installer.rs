@@ -1,13 +1,12 @@
 
-use std::{fmt::{Display, Formatter}, ops::{Deref, DerefMut}, io::{Read, Write, Seek}, path::PathBuf};
+use std::{fmt::{Display, Formatter}, ops::{Deref, DerefMut}, io::{Read, Write, Seek}, path::PathBuf, process::Command};
 
-use crate::{workloads::error::WorkloadError, http::client, helpers::versioning::version_compare};
+use crate::{workloads::error::WorkloadError, http::client, helpers::versioning::version_compare, scripting::{builder::{IJSContext, IJSRuntime}, error::IJSError}};
 
-use super::{abstraction::{Worker, ContextAccessor, Workload, ContextArcM, AppWrapper}, error::{WeakStructParseError, PackageUninstallError, RepositoryCrossCheckError, RepositoryFetchError}, updater::{PackagePair, CrossCheckSummary}};
+use super::{abstraction::{Workload, AppWrapper, InstallyApp}, error::{WeakStructParseError, PackageUninstallError, RepositoryCrossCheckError, RepositoryFetchError, ScriptError}, updater::{PackagePair, CrossCheckSummary}};
 
 use serde::{Deserialize, Serialize};
 use async_trait::async_trait;
-
 
 pub type InstallerWrapper = AppWrapper<InstallerOptions>;
 
@@ -22,34 +21,23 @@ impl Default for InstallerOptions {
     }
 }
 
-impl Worker for InstallerWrapper { }
-
-impl ContextAccessor for InstallerWrapper {
-    fn get_context(&self) -> ContextArcM {
-        self.app.get_context()
-    }
-
-    fn get_product(&self) -> Product {
-        self.app.product.clone()
-    }
-}
-
 #[async_trait]
 impl Workload for InstallerWrapper {
     async fn run(&self) -> Result<(), WorkloadError> {
+        log::info!("Starting to install {}", &self.app.get_product().name);
 
         let global = self.app.get_global_script().await?;
         global.if_exist(|s| Ok(s.invoke_before_installition()))?;
 
-        self.set_workload_state(InstallerWorkloadState::FetchingRemoteTree(self.app.product.name.clone()));     
-        let repository = self.fetch_repository().await
+        self.app.set_workload_state(InstallerWorkloadState::FetchingRemoteTree(self.app.get_product().name.clone()));     
+        let repository = self.app.fetch_repository().await
             .map_err(|err| WorkloadError::Other(err.to_string()))?;
 
-        std::fs::create_dir_all(&self.app.product.target_directory)
+        std::fs::create_dir_all(&self.app.get_product().target_directory)
             .map_err(|err| WorkloadError::Other(err.to_string()))?;
 
         // api uses product weak struct, resolves it from filesystem
-        self.get_product().dump()
+        self.app.get_product().dump()
             .map_err(|e| WorkloadError::Other(e.to_string()))?;
 
         let targets = match &self.settings.target_packages {
@@ -67,16 +55,16 @@ impl Workload for InstallerWrapper {
             })?;
 
             log::info!("Starting to install {}, version: {}.", package.display_name, package.version);
-            log::info!("Downloading the package file from {}", &self.app.product.get_uri_to_package(&package));
-            self.set_workload_state(InstallerWorkloadState::DownloadingComponent(package.display_name.clone()));
+            log::info!("Downloading the package file from {}", &self.app.get_product().get_uri_to_package(&package));
+            self.app.set_workload_state(InstallerWorkloadState::DownloadingComponent(package.display_name.clone()));
 
-            let package_file = self.get_package(&package).await
+            let package_file = self.app.get_package(&package).await
                 .map_err(|err| WorkloadError::Other(err.to_string()))?;
 
             log::info!("Decompression of {}", &package.display_name);
-            self.set_workload_state(InstallerWorkloadState::InstallingComponent(package.display_name.clone()));
+            self.app.set_workload_state(InstallerWorkloadState::InstallingComponent(package.display_name.clone()));
 
-            self.install_package(&package, &package_file).await
+            self.app.install_package(&package, &package_file).await
                 .map_err(|err| WorkloadError::Other(err.to_string()))?;
 
             script.if_exist(|s| {
@@ -85,7 +73,7 @@ impl Workload for InstallerWrapper {
             })?;
         }
 
-        self.create_app_entry(&self.get_product())
+        self.app.create_app_entry(&self.app.get_product())
             .map_err(|err| WorkloadError::Other(format!("Failed to create app entry: {}", err.to_string())))?;
 
         global.if_exist(|s| Ok(s.invoke_after_installition()))?;
@@ -104,7 +92,7 @@ pub struct Product {
     pub product_url: String,
     pub control_script: String,
     pub target_directory: String,
-    pub repository: String
+    pub repository: String,
 }
 
 impl Product{
