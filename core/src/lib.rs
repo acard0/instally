@@ -4,6 +4,7 @@ pub mod archiving;
 pub mod helpers;
 pub mod extensions;
 pub mod factory;
+pub mod scripting;
 
 pub(crate) mod target;
 #[cfg(target_os = "windows")]
