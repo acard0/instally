@@ -33,7 +33,10 @@ impl ContextAccessor for UninstallerWrapper {
 #[async_trait] 
 impl Workload for UninstallerWrapper {
     async fn run(&self) -> Result<(), WorkloadError> {
-        let summary_cell = RefCell::new(self.get_installition_summary_target()
+
+        let global = self.app.get_global_script().await?;
+        global.if_exist(|s| Ok(s.invoke_before_uninstallition()))?;
+
             .map_err(|err| WorkloadError::Other(err.to_string()))?
         );  
 
@@ -52,6 +55,16 @@ impl Workload for UninstallerWrapper {
         
         let mut all_done = true;
         for package in targets {
+            let remote = repository.get_package(&package.name);
+            let script = match remote {
+                Some(remote) => { self.app.get_package_script(&remote).wait()? }
+                _ => None
+            };
+
+            script.if_exist(|s| {
+                s.invoke_before_uninstallition();
+                Ok(())
+            })?;
 
             log::info!("Starting to delete {} package", package.display_name);
             
@@ -65,6 +78,11 @@ impl Workload for UninstallerWrapper {
             });
 
             let _ = summary.removed(&package.name).unwrap().save();
+
+            script.if_exist(|s| {
+                s.invoke_after_uninstallition();
+                Ok(())
+            })?;
         };
 
         if all_done {
@@ -77,8 +95,8 @@ impl Workload for UninstallerWrapper {
             log::info!("All packages and their files are deleted. App entry is deleted too.");
         }
 
-        self.set_workload_state(UninstallerWorkloadState::Done);
-        self.set_state_progress(100.0);
+        global.if_exist(|s| Ok(s.invoke_after_uninstallition()))?;
+        
         Ok(())
     }
 }

@@ -265,10 +265,26 @@ impl WorkloadResult {
         }
     }
 
-    pub fn get_error(&self) -> Option<String> {
-        match self {
-            Self::Error(err) => Some(err.clone()),
-            _ => None,
+
+    pub async fn get_package_script(&self, package: &Package) -> Result<Option<Script>, ScriptError> {
+        self.get_script(self.product.get_uri_to_package_script(package)?).await
+    }
+
+    pub async fn get_global_script(&self) -> Result<Option<Script>, ScriptError> {
+        self.get_script(self.product.get_uri_to_global_script().await?).await
+    }
+
+    pub async fn get_script(&self, uri: Option<String>) -> Result<Option<Script>, ScriptError> {
+        match uri {
+            None => Ok(None),
+            Some(uri) => {
+                let mut file = tempfile::NamedTempFile::new()?;
+                let _ = self.get_file(&uri, file.as_file_mut()).await?;
+                let src = std::fs::read_to_string(file.path())?;
+                Ok(Some(Script::new(src, self)?))
+            }
+        } 
+    }
         }
     }
 }

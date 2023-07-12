@@ -43,7 +43,9 @@ impl ContextAccessor for UpdaterWrapper {
 #[async_trait]
 impl Workload for UpdaterWrapper {
     async fn run(&self) -> Result<(), WorkloadError> {
-        self.set_workload_state(UpdaterWorkloadState::FetchingRemoteTree(self.app.product.name.clone()));  
+        let global = self.app.get_global_script().await?;
+        global.if_exist(|s| Ok(s.invoke_before_update()))?;
+
 
         let summary = self.get_installition_summary_target()
             .map_err(|err| WorkloadError::Other(err.to_string()))?;
@@ -61,6 +63,13 @@ impl Workload for UpdaterWrapper {
         for pair in state.updates {
             let local = pair.local;
             let remote = pair.remote;
+
+            let script = self.app.get_package_script(&remote).await?;
+
+            script.if_exist(|s| {
+                s.invoke_before_installition();
+                Ok(())
+            })?;
             
             // check if package is opted-out specifically via start args
             if let Some(targets) = &self.settings.target_packages {
@@ -82,10 +91,14 @@ impl Workload for UpdaterWrapper {
 
             self.install_package(&remote, &package_file).await
                 .map_err(|err| WorkloadError::Other(err.to_string()))?;
+            script.if_exist(|s| {
+                s.invoke_after_update();
+                Ok(())
+            })?;
         }
 
-        self.set_workload_state(UpdaterWorkloadState::Done);
-        self.set_state_progress(100.0);
+        global.if_exist(|s| Ok(s.invoke_before_update()))?;
+
         Ok(())
     }
 }

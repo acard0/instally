@@ -37,7 +37,9 @@ impl ContextAccessor for InstallerWrapper {
 #[async_trait]
 impl Workload for InstallerWrapper {
     async fn run(&self) -> Result<(), WorkloadError> {
-        log::info!("Starting to install {}", &self.app.product.name);
+
+        let global = self.app.get_global_script().await?;
+        global.if_exist(|s| Ok(s.invoke_before_installition()))?;
 
         self.set_workload_state(InstallerWorkloadState::FetchingRemoteTree(self.app.product.name.clone()));     
         let repository = self.fetch_repository().await
@@ -58,6 +60,11 @@ impl Workload for InstallerWrapper {
         log::info!("Packages in installition queue: {}", targets.iter().map(|e| e.display_name.clone()).collect::<Vec<_>>().join(", "));
 
         for package in targets {
+            let script = self.app.get_package_script(&package).await?;
+            script.if_exist(|s| {
+                s.invoke_before_installition();
+                Ok(())
+            })?;
 
             log::info!("Starting to install {}, version: {}.", package.display_name, package.version);
             log::info!("Downloading the package file from {}", &self.app.product.get_uri_to_package(&package));
@@ -72,13 +79,19 @@ impl Workload for InstallerWrapper {
             self.install_package(&package, &package_file).await
                 .map_err(|err| WorkloadError::Other(err.to_string()))?;
 
+            script.if_exist(|s| {
+                s.invoke_after_installition();
+                Ok(())
+            })?;
         }
 
         self.create_app_entry(&self.get_product())
             .map_err(|err| WorkloadError::Other(format!("Failed to create app entry: {}", err.to_string())))?;
 
-        self.set_workload_state(InstallerWorkloadState::Done);
-        self.set_state_progress(100.0);
+        global.if_exist(|s| Ok(s.invoke_after_installition()))?;
+
+        self.app.set_workload_state(InstallerWorkloadState::Done);
+        self.app.set_state_progress(100.0);
         Ok(())
     }
 }
@@ -113,6 +126,25 @@ impl Product{
 
     pub fn get_uri_to_package(&self, package: &Package) -> String {
         format!("{}packages/{}", self.repository, package.archive)
+    }
+
+    pub fn get_uri_to_package_script(&self, package: &Package) -> Result<Option<String>, ScriptError> {
+        if package.script.is_empty() {
+            return Ok(None)
+        }
+        
+        Ok(Some(format!("{}packages/{}", self.repository, package.script)))
+    }
+
+    pub async fn get_uri_to_global_script(&self) -> Result<Option<String>, ScriptError> {
+        let repo = self.fetch_repository().await
+            .map_err(|err| ScriptError::Other(format!("Attemptted to get script global script meta but {err:?}")))?;
+
+        if repo.script.is_empty() {
+            return Ok(None)
+        }
+        
+        Ok(Some(format!("{}{}", self.repository, repo.script)))
     }
 
     pub fn get_path_to_self_struct_target(&self) -> std::path::PathBuf {
@@ -153,6 +185,7 @@ impl Product{
 #[serde(rename_all = "PascalCase")]
 pub struct Repository {
     pub application_name: String,
+    pub script: String,
     pub packages: Vec<Package>,
 }
 
@@ -172,12 +205,68 @@ pub struct Package {
     pub release_date: String,
     pub default: bool,
     pub archive: String,
-    pub sha1: String
+    pub sha1: String,
+    pub script: String
 }
 
 pub struct PackageFile {
     pub handle: tempfile::NamedTempFile,
     pub package: Package
+}
+#[derive(Clone)]
+pub struct Script {
+    ctx: IJSContext,
+}
+
+impl Script {
+    pub fn new(src: String, app: &InstallyApp) -> Result<Script, IJSError> {
+        let rt = IJSRuntime::current_or_get();
+        let ctx = rt.create_context(app.clone());
+        ctx.mount(&src)?;
+        Ok(Script { ctx })
+    }
+
+    pub fn invoke_before_installition(&self) { 
+        self.ctx.eval_raw::<()>("Installer.on_before_installition();").unwrap();
+    }
+
+    pub fn invoke_after_installition(&self) { 
+        self.ctx.eval_raw::<()>("Installer.on_after_installition();").unwrap();
+    }
+
+    pub fn invoke_before_update(&self) {
+        self.ctx.eval_raw::<()>("Installer.on_before_update();").unwrap();
+    }
+
+    pub fn invoke_after_update(&self) { 
+        self.ctx.eval_raw::<()>("Installer.on_after_update();").unwrap();
+    }
+
+    pub fn invoke_before_uninstallition(&self) {
+        self.ctx.eval_raw::<()>("Installer.on_before_uninstallition();").unwrap();
+    }
+
+    pub fn invoke_after_uninstallition(&self) {
+        self.ctx.eval_raw::<()>("Installer.on_after_uninstallition();").unwrap();
+    }
+    
+    pub fn free(&self) {
+        self.ctx.free();
+    }
+}
+
+pub trait PackageScriptOptional {
+    fn if_exist<F: FnOnce(&Script) -> Result<(), ScriptError>>(&self, action: F) -> Result<(), ScriptError>;
+}
+
+impl PackageScriptOptional for Option<Script> {
+    fn if_exist<F: FnOnce(&Script) -> Result<(), ScriptError>>(&self, action: F) -> Result<(), ScriptError> {
+        if let Some(script) = self {
+            return action(script);
+        }
+
+        Ok(())
+    }
 }
 
 pub struct InstallitionSummary {
