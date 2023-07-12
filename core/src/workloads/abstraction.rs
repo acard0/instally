@@ -285,6 +285,15 @@ impl WorkloadResult {
             }
         } 
     }
+
+    pub async fn get_dependency(&self, uri: &str, state_text: &str) -> Result<DependencyFile, PackageDownloadError>{
+        self.set_workload_state(state_text);
+
+        let mut file = tempfile::NamedTempFile::new()?;
+        let _ = self.get_file(uri, file.as_file_mut()).await?;
+        Ok(DependencyFile { handle: file })
+    }
+
         }
     }
 }

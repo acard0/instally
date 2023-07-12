@@ -213,6 +213,11 @@ pub struct PackageFile {
     pub handle: tempfile::NamedTempFile,
     pub package: Package
 }
+
+pub struct DependencyFile {
+    pub handle: tempfile::NamedTempFile,
+}
+
 #[derive(Clone)]
 pub struct Script {
     ctx: IJSContext,
@@ -266,6 +271,25 @@ impl PackageScriptOptional for Option<Script> {
         }
 
         Ok(())
+    }
+}
+
+impl DependencyFile {
+    pub fn execute(self, arguments: Vec<String>, attached: bool) {
+        let (_, path) = self.handle.keep().unwrap();
+
+        let mut cmd = Command::new(format!("{}", path.to_str().unwrap()));
+        arguments.iter().for_each(|f| {
+            cmd.arg(f);
+        });
+
+        let handle = cmd.spawn().unwrap();
+
+        if attached {
+            handle.wait_with_output().unwrap();
+        }
+
+        std::fs::remove_file(path).unwrap();
     }
 }
 
