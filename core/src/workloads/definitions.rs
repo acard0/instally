@@ -130,6 +130,14 @@ pub struct Repository {
 }
 
 impl Repository {
+    pub fn new(application_name: &str) -> Self {
+        Self {
+            application_name: application_name.to_string(),
+            script: String::new(),
+            packages: Vec::new(),
+        }
+    }
+
     pub fn get_package(&self, package_name: &str) -> Option<Package> {
         self.packages.iter().find(|e| e.name == package_name)
             .map(|f| f.clone())
@@ -147,6 +155,16 @@ pub struct Package {
     pub archive: String,
     pub sha1: String,
     pub script: String
+}
+
+impl Package {
+    pub fn from_file<P: AsRef<Path>>(path: P) -> Result<Package, WeakStructParseError> {
+        let mut file = std::fs::OpenOptions::new().read(true).open(path)?;
+        let mut xml = String::new();
+        file.read_to_string(&mut xml)?;
+        let package: Package = quick_xml::de::from_str(&xml)?;
+        Ok(package)
+    }
 }
 
 pub struct PackageFile {
