@@ -1,4 +1,4 @@
-use std::{ops::{Deref, DerefMut}, io::{Read, Write, Seek}, path::PathBuf, process::Command};
+use std::{ops::{Deref, DerefMut}, io::{Read, Write, Seek}, path::{PathBuf, Path}, process::Command};
 
 use crate::{http::client, helpers::{versioning::version_compare, formatter::TemplateFormat}, scripting::{builder::{IJSContext, IJSRuntime}, error::IJSError}};
 
