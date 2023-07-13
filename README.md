@@ -9,7 +9,8 @@ work in progress.
 [x] binarygen
 [x] basic ffi api
   - update check, uninstall, add/remove package
-[] scripting layer
+[x] scripting layer
   - events after/before | install/update/uninstall etc
+[] tests
 [] docs
 ```
