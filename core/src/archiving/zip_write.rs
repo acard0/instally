@@ -1,4 +1,4 @@
-use std::{fs::{File}, io, path};
+use std::{fs::{File}, io, path::{self, Path}};
 
 use filepath::FilePath;
 use walkdir::WalkDir;
@@ -46,19 +46,18 @@ where T: io::Write + io::Seek,
     Ok(paths)
 }
 
-pub fn compress_dir(src_dir: &str, dst_file: &str, method: zip::CompressionMethod) 
+pub fn compress_dir<PSrc: AsRef<Path>, PDst: AsRef<Path>>(src_dir: PSrc, dst_file: PDst, method: zip::CompressionMethod) 
     -> ZipResult<Vec<std::path::PathBuf>> {
 
-    if !path::Path::new(src_dir).is_dir() {
+    if !src_dir.as_ref().is_dir() {
         return Err(ZipError::FileNotFound);
     }
 
-    let path = path::Path::new(dst_file);
-    let file = File::create(path)?;
+    let file = File::create(dst_file)?;
 
-    let walkdir = WalkDir::new(src_dir);
+    let walkdir = WalkDir::new(src_dir.as_ref().clone());
     let it = walkdir.into_iter();
 
-    let paths = compress_dirs(&mut it.filter_map(|e: Result<walkdir::DirEntry, walkdir::Error>| e.ok()), src_dir, file, method)?;
+    let paths = compress_dirs(&mut it.filter_map(|e: Result<walkdir::DirEntry, walkdir::Error>| e.ok()), src_dir.as_ref().to_str().unwrap(), file, method)?;
     Ok(paths)
 }
