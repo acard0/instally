@@ -4,7 +4,7 @@ mod macros;
 mod ffi;
 
 use ffi::{CallResult, CPackageVersioning, CAppState};
-use instally_core::{self, workloads::{installer::{Product, InstallitionSummary, Package, InstallerOptions, Repository}, updater::UpdaterOptions, abstraction::AppContextNotifiable, uninstaller::UninstallerOptions}, factory::{WorkloadType, self}, extensions::future::FutureSyncExt};
+use instally_core::{self, workloads::{updater::UpdaterOptions, abstraction::AppContextNotifiable, uninstaller::UninstallerOptions, definitions::{InstallitionSummary, Repository, Product, Package}, installer::InstallerOptions}, factory::{WorkloadType, self}, extensions::future::FutureSyncExt};
 
 use crate::ffi::ByteBuffer;
 
