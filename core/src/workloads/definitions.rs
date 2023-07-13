@@ -18,14 +18,24 @@ pub struct Product {
 }
 
 impl Product{
-    pub fn read_from_file() -> Result<Product, WeakStructParseError> {
+    pub fn read() -> Result<Product, WeakStructParseError> {
+        Self::read_file(Path::new("product.xml"))
+    }
+
+    pub fn read_file<P: AsRef<Path>>(path: P) -> Result<Product, WeakStructParseError> {
         let mut file = std::fs::OpenOptions::new()
-            .read(true).open("product.xml")?;
+            .read(true).open(path)?;
 
         let mut xml = String::new();
 
         file.read_to_string(&mut xml)?;
         let product: Product = quick_xml::de::from_str(&xml)?;
+
+        let formatter = product.create_formatter();
+        let back_step = quick_xml::se::to_string(&product)?;
+        let xml = formatter.format(&back_step);
+
+        let product: Product = quick_xml::de::from_str(&xml)?; 
 
         Ok(product)
     }
