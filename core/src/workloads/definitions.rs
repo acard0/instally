@@ -12,7 +12,6 @@ pub struct Product {
     pub name: String,
     pub publisher: String,
     pub product_url: String,
-    pub control_script: String,
     pub target_directory: String,
     pub repository: String,
 }

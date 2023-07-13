@@ -28,7 +28,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 name: "Tutucu".to_owned(),
                 publisher: "liteware".to_owned(),
                 product_url: "https://liteware.io".to_owned(),
-                control_script: "none".to_owned(),
                 target_directory: "C:\\Users\\doquk\\AppData\\Roaming\\liteware.io\\Tutucu".to_owned(),
                 repository: "https://cdn.liteware.xyz/instally/tutucu/release/".to_owned()
             }
