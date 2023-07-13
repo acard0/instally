@@ -1,6 +1,6 @@
 
 [workspace]
-members = ["api", "core", "scaffold", "binarygen", "thirdparty\\struct_field"] 
+members = ["api", "core", "scaffold", "binarygen", "repogen", "thirdparty\\struct_field"] 
 
 [profile.release]
 strip = true  # Automatically strip symbols from the binary.
