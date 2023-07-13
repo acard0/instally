@@ -16,7 +16,7 @@ pub struct Meta {
 
 impl Meta {
     pub fn get() -> Self {
-        let product = Product::read().unwrap();
+        let product = Product::read_from_file().unwrap();
         let repository = product.fetch_repository().wait().unwrap();
         let installition_summary = InstallitionSummary::read_or_create_target(&product).unwrap();
 

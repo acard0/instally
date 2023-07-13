@@ -250,7 +250,7 @@ impl InstallyApp
 
     pub fn get_installition_summary_local(&self) -> Result<InstallitionSummary, WeakStructParseError> {
         let current = std::env::current_dir().unwrap();
-        InstallitionSummary::read_or_create(&current)
+        InstallitionSummary::read_or_create(&self.product, &current)
     }
 
     pub fn get_installition_summary_target(&self) -> Result<InstallitionSummary, WeakStructParseError> {

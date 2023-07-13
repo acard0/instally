@@ -25,6 +25,7 @@ serde = { version = "1.0.164", features = ["derive"] }
 quick-xml = { version = "0.29.0", features = ["serialize"] }
 chrono = { version = "0.4.26", features = ["serde", "rustc-serialize"] }
 walkdir = "*"
+directories = "5.0.1"
 filepath = "0.1.2"
 tempfile = "3.6.0"
 zip = "*"

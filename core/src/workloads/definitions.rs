@@ -1,9 +1,10 @@
 use std::{ops::{Deref, DerefMut}, io::{Read, Write, Seek}, path::PathBuf, process::Command};
 
-use crate::{http::client, helpers::versioning::version_compare, scripting::{builder::{IJSContext, IJSRuntime}, error::IJSError}};
+use crate::{http::client, helpers::{versioning::version_compare, formatter::TemplateFormat}, scripting::{builder::{IJSContext, IJSRuntime}, error::IJSError}};
 
 use super::{abstraction::InstallyApp, error::{WeakStructParseError, PackageUninstallError, RepositoryCrossCheckError, RepositoryFetchError, ScriptError}};
 
+use directories::UserDirs;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
@@ -17,7 +18,7 @@ pub struct Product {
 }
 
 impl Product{
-    pub fn read() -> Result<Product, WeakStructParseError> {
+    pub fn read_from_file() -> Result<Product, WeakStructParseError> {
         let mut file = std::fs::OpenOptions::new()
             .read(true).open("product.xml")?;
 
@@ -27,6 +28,21 @@ impl Product{
         let product: Product = quick_xml::de::from_str(&xml)?;
 
         Ok(product)
+    }
+
+    pub fn create_formatter(&self) -> TemplateFormat {
+        let directories = UserDirs::new().unwrap(); 
+
+        TemplateFormat::new()
+            .add_replacement("App.Name", &self.name)
+            .add_replacement("App.Publisher", &self.publisher)
+            .add_replacement("App.ProductUrl", &self.product_url)
+            .add_replacement("App.TargetDirectory", &self.target_directory)
+            .add_replacement("App.Repository", &self.repository)
+            .add_replacement("Directories.User.Home", directories.home_dir().to_str().unwrap())
+            .add_replacement("Directories.User.Documents", directories.document_dir().unwrap().to_str().unwrap())
+            .add_replacement("Directories.User.Downloads", directories.download_dir().unwrap().to_str().unwrap())
+            .add_replacement("Directories.User.Desktop", directories.desktop_dir().unwrap().to_str().unwrap())
     }
 
     pub fn get_path_to_package(&self, _package: &Package) -> &std::path::Path {
@@ -66,7 +82,8 @@ impl Product{
 
     pub async fn fetch_repository(&self) -> Result<Repository, RepositoryFetchError> {
         let xml_uri = format!("{}meta.xml", &self.repository);
-        let xml = client::get_text(&xml_uri, |_| ()).await?;
+        let mut xml = client::get_text(&xml_uri, |_| ()).await?;
+        xml = self.create_formatter().format(&xml);
 
         let repository: Repository = quick_xml::de::from_str(&xml)?;
 
@@ -230,10 +247,10 @@ impl DerefMut for InstallitionSummary {
 
 impl InstallitionSummary {
     pub fn read_or_create_target(product: &Product) -> Result<Self, WeakStructParseError> {
-        Self::read_or_create(&std::path::PathBuf::from(&product.target_directory))
+        Self::read_or_create(product, &std::path::PathBuf::from(&product.target_directory))
     }
 
-    pub fn read_or_create(base: &PathBuf) -> Result<Self, WeakStructParseError> {
+    pub fn read_or_create(product: &Product, base: &PathBuf) -> Result<Self, WeakStructParseError> {
         let struct_path = base.join("instally_summary.xml");
 
         let mut file = match std::fs::File::options()
@@ -248,6 +265,7 @@ impl InstallitionSummary {
 
         let mut weak_struct = String::new();
         file.read_to_string(&mut weak_struct)?;
+        weak_struct = product.create_formatter().format(&weak_struct);
 
         let inner: InstallitionSummaryInner = match quick_xml::de::from_str(&weak_struct) {
             Ok(r) => r,

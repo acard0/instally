@@ -1,5 +1,5 @@
 use once_cell::sync::Lazy;
-use rquickjs::{AsyncRuntime, AsyncContext, async_with, FromJs, CatchResultExt, promise::Promise};
+use rquickjs::{AsyncRuntime, AsyncContext, async_with, FromJs, CatchResultExt, promise::Promise, Object};
 
 use crate::{workloads::abstraction::InstallyApp, extensions::future::FutureSyncExt};
 
@@ -59,13 +59,35 @@ impl IJSContext {
 
         ctx.with(|ctx| {
             let global = ctx.globals();
-            let app = Box::into_raw(Box::new(app)) as u64;
-            let j_object = InstallerJ::new(app);
+            let app_ptr = Box::into_raw(Box::new(app.clone())) as u64;
+            let j_object = InstallerJ::new(app_ptr);
 
             global.init_def::<Sleep>().unwrap();
             global.init_def::<Print>().unwrap();
             global.init_def::<JsApp>().unwrap();
             global.set("Installer", j_object).unwrap();
+
+            // set alias keys
+            for (path, value) in app.get_product().create_formatter().iter() {
+                let parts: Vec<&str> = path.split('.').collect();
+                let mut current_obj = global.clone();
+        
+                for (i, part) in parts.iter().enumerate() {
+                    if i < parts.len() - 1 {
+                        let next_obj = match current_obj.get::<_, Object>(part.to_owned()) {
+                            Ok(obj) => obj,
+                            _ => {
+                                let new_obj = Object::new(ctx).unwrap();
+                                current_obj.set(part.to_owned(), new_obj.clone()).unwrap();
+                                new_obj
+                            }
+                        };
+                        current_obj = next_obj;
+                    } else {
+                        current_obj.set(part.to_owned(), value.to_owned()).unwrap();
+                    }
+                }
+            }
         }).wait();
 
         IJSContext { ctx: Box::into_raw(Box::new(ctx)) }
