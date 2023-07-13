@@ -1,5 +1,5 @@
 
-use crate::workloads::{installer::{InstallerOptions, Product, InstallerWrapper, InstallerWorkloadState}, uninstaller::{UninstallerOptions, UninstallerWrapper, UninstallerWorkloadState}, abstraction::{InstallyApp, Workload, WorkloadResult}, updater::{UpdaterWrapper, UpdaterWorkloadState, UpdaterOptions}};
+use crate::workloads::{installer::{InstallerOptions, InstallerWrapper, InstallerWorkloadState}, uninstaller::{UninstallerOptions, UninstallerWrapper, UninstallerWorkloadState}, abstraction::{InstallyApp, Workload, WorkloadResult}, updater::{UpdaterWrapper, UpdaterWorkloadState, UpdaterOptions}, definitions::Product};
 
 pub enum WorkloadType {
     Installer(InstallerOptions),

@@ -1,21 +1,10 @@
 
 use std::fmt::{Formatter, Display};
 
-use crate::workloads::installer::PackageScriptOptional;
-
-use super::{abstraction::*, error::*, installer::{PackageInstallition, Package}};
+use super::{definitions::*, error::*, abstraction::*};
 
 use async_trait::async_trait;
 
-pub struct PackagePair {
-    pub local: PackageInstallition,
-    pub remote: Package
-}
-
-pub struct CrossCheckSummary {
-    pub map: Vec<PackagePair>,
-    pub updates: Vec<PackagePair>
-}
 
 pub type UpdaterWrapper = AppWrapper<UpdaterOptions>;
 

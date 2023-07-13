@@ -2,10 +2,9 @@ use std::{fmt::{Formatter, Display}, cell::RefCell};
 
 use async_trait::async_trait;
 
-use crate::{workloads::installer::PackageScriptOptional, extensions::future::FutureSyncExt};
+use crate::{workloads::definitions::PackageScriptOptional, extensions::future::FutureSyncExt};
 
-use super::{abstraction::{Workload, AppWrapper}, error::WorkloadError, installer::PackageInstallition};
-
+use super::{definitions::*, error::*, abstraction::*};
 
 pub type UninstallerWrapper = AppWrapper<UninstallerOptions>;
 

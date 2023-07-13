@@ -3,7 +3,7 @@
 
 use core::panic;
 
-use instally_core::{workloads::{installer::{Product, InstallerOptions, InstallitionSummary}, uninstaller::UninstallerOptions, updater::UpdaterOptions}, factory::WorkloadType};
+use instally_core::{workloads::{uninstaller::UninstallerOptions, updater::UpdaterOptions, definitions::{Product, InstallitionSummary}, installer::InstallerOptions}, factory::WorkloadType};
 
 mod factory;
 mod app;

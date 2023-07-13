@@ -19,7 +19,7 @@ use windows::core::PCWSTR;
 use std::path::Path;
 
 use crate::helpers::like::CStringLike;
-use crate::workloads::installer::Product;
+use crate::workloads::definitions::Product;
 
 use super::error::AppEntryError;
 use super::error::CreateSymlinkError;

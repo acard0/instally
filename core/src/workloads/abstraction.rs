@@ -5,7 +5,8 @@ use once_cell::sync::Lazy;
 use parking_lot::Mutex;
 
 use crate::{http::client::{self, HttpStreamError}, archiving, target::error::{CreateSymlinkError, AppEntryError}};
-use super::{installer::{Product, Repository, Package, PackageFile, InstallitionSummary, DependencyFile, Script}, error::*};
+
+use super::{definitions::*, error::*};
 
 pub type ArcM<T> = Arc<Mutex<T>>;
 pub type LazyArcM<T> = Lazy<ArcM<T>>;
