@@ -4,7 +4,7 @@ use rquickjs::{FromJs, Ctx, Value};
 #[rquickjs::bind(object, public)]
 #[quickjs(bare)]
 pub mod js_app {
-    use crate::workloads::abstraction::InstallyApp;
+    use crate::{workloads::abstraction::InstallyApp, extensions::future::FutureSyncExt};
 
     pub struct InstallerJ {
         #[quickjs(readonly)]
@@ -43,13 +43,13 @@ pub mod js_app {
             let _ = self.traverse_app().symlink_file(original, link_dir, &link_name);
         }
 
-        pub async fn get_and_execute(&self, url: String, arguments: rquickjs::Array<'_>, state_text: String) -> rquickjs::Result<()> { 
+        pub fn get_and_execute(&self, url: String, arguments: rquickjs::Array<'_>, state_text: String) -> rquickjs::Result<()> { 
             let arguments = arguments.iter::<String>()
                 .map(|f| format!("{}", f.unwrap()))
                 .collect::<Vec<String>>();
 
             let app = self.traverse_app();
-            let dependency_result = app.get_dependency(&url, &state_text).await;
+            let dependency_result = app.get_dependency(&url, &state_text).wait();
 
             if let Ok(dependency) = dependency_result {
                 dependency.execute(arguments, true);
