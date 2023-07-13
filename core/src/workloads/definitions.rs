@@ -15,6 +15,7 @@ pub struct Product {
     pub product_url: String,
     pub target_directory: String,
     pub repository: String,
+    pub script: String,
 }
 
 impl Product{
@@ -72,6 +73,8 @@ impl Product{
     }
 
     pub async fn get_uri_to_global_script(&self) -> Result<Option<String>, ScriptError> {
+        // product struct also contains script field but if for some unknown reason
+        // script file name at cloud gets changed it can cause issue as product struct is embeeded
         let repo = self.fetch_repository().await
             .map_err(|err| ScriptError::Other(format!("Attemptted to get script global script meta but {err:?}")))?;
 
