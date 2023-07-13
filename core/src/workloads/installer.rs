@@ -64,7 +64,7 @@ impl Workload for InstallerWrapper {
             log::info!("Decompression of {}", &package.display_name);
             self.app.set_workload_state(InstallerWorkloadState::InstallingComponent(package.display_name.clone()));
 
-            self.app.install_package(&package, &package_file).await
+            self.app.install_package(&package, &package_file)
                 .map_err(|err| WorkloadError::Other(err.to_string()))?;
 
             script.if_exist(|s| {

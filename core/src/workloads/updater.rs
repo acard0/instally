@@ -80,7 +80,7 @@ impl Workload for UpdaterWrapper {
             log::info!("Decompression of {}", &remote.display_name);
             self.app.set_workload_state(UpdaterWorkloadState::InstallingComponent(remote.display_name.clone()));
 
-            self.app.install_package(&remote, &package_file).await
+            self.app.install_package(&remote, &package_file)
                 .map_err(|err| WorkloadError::Other(err.to_string()))?;
 
             script.if_exist(|s| {

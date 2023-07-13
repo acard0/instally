@@ -225,7 +225,7 @@ impl InstallyApp
         Ok(DependencyFile { handle: file })
     }
 
-    pub async fn install_package(&self, package: &Package, package_file: &PackageFile) -> Result<(), PackageInstallError> {
+    pub fn install_package(&self, package: &Package, package_file: &PackageFile) -> Result<(), PackageInstallError> {
         let product = &self.product;
         let progress_closure = self.create_progress_closure();
         let files = archiving::zip_read::extract_to(&package_file.handle.as_file(), product.get_path_to_package(package), &progress_closure)?;
