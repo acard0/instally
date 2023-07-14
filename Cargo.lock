@@ -1723,6 +1723,8 @@ dependencies = [
 name = "instally-bingen"
 version = "0.1.0"
 dependencies = [
+ "clap",
+ "instally-core",
  "patternscan",
  "quick-xml",
  "serde",
@@ -1757,6 +1759,23 @@ dependencies = [
  "walkdir",
  "windows 0.48.0",
  "winreg 0.50.0",
+ "zip",
+]
+
+[[package]]
+name = "instally-repogen"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "env_logger",
+ "futures-executor",
+ "instally-core",
+ "log",
+ "once_cell",
+ "quick-xml",
+ "serde",
+ "tokio",
+ "walkdir",
  "zip",
 ]
 
@@ -2638,23 +2657,6 @@ name = "relative-path"
 version = "1.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4bf2521270932c3c7bed1a59151222bd7643c79310f2916f01925e1e16255698"
-
-[[package]]
-name = "repogen"
-version = "0.1.0"
-dependencies = [
- "clap",
- "env_logger",
- "futures-executor",
- "instally-core",
- "log",
- "once_cell",
- "quick-xml",
- "serde",
- "tokio",
- "walkdir",
- "zip",
-]
 
 [[package]]
 name = "reqwest"

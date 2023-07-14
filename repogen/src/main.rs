@@ -2,7 +2,7 @@
 use std::path::Path;
 
 use clap::{arg, Parser};
-use instally_core::{workloads::definitions::{Package, Repository, Product}, archiving};
+use instally_core::{workloads::definitions::{Package, Repository, Product, PackageDefinition}, archiving, helpers::serializer};
 use walkdir::WalkDir;
 
 #[derive(Parser, Debug)]
@@ -45,14 +45,19 @@ fn main() {
         let data_dir = package_dir.join("data");
         let meta_dir = package_dir.join("meta");
 
+        
         let package_xml_path = meta_dir.join("package.xml");
-        let package = Package::from_file(&package_xml_path).unwrap();
+        let package_definition = PackageDefinition::from_file(&package_xml_path).unwrap();
 
+        let archive_name = format!("{}.zip", package_definition.name);
+        let sha1 = "".to_owned(); // todo: calculate sha1
+        let script = package_definition.script.clone();
+        let package = Package::from_definition(&package_definition, &archive_name, &sha1, &script);
         repository.packages.push(package.clone());
 
         archiving::zip_write::compress_dir(
             &data_dir,
-            &repository_packages_dir.join(format!("{}.zip", package.name)),
+            &repository_packages_dir.join(archive_name),
             zip::CompressionMethod::Bzip2
         ).unwrap();
 
@@ -62,11 +67,12 @@ fn main() {
         }
     }
 
-    let repository_xml = quick_xml::se::to_string(&repository).unwrap();
-    std::fs::write(target_dir.join("repository.xml"), repository_xml).unwrap();
-
     if !product.script.is_empty() {
+        repository.script = product.script.clone();
         let global_script_path = config_dir.join(product.script.clone());
         std::fs::copy(global_script_path, target_dir.join(product.script)).unwrap();
     }
+
+    let repository_xml = serializer::to_xml(&repository).unwrap();
+    std::fs::write(target_dir.join("repository.xml"), repository_xml).unwrap(); // TODO: create consts for file names
 }

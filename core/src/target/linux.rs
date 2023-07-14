@@ -1,7 +1,7 @@
 use std::path::Path;
 
 use crate::AppInstallition;
-use crate::error::CreateAppEntryError;
+use crate::error::AppEntryError;
 use crate::error::CreateSymlinkError;
 use crate::like::CStringLike;
 
@@ -9,14 +9,17 @@ pub fn symlink_file<P: AsRef<Path>, Q: AsRef<Path>>(original: P, link_dir: Q, li
     unimplemented!() 
 }
 
-pub fn create_app_entry(app: AppInstallition) -> Result<(), CreateAppEntryError> {
+pub fn create_app_entry(app: &Product, maintinance_tool_name: &str) -> Result<(), AppEntryError> {
+    unimplemented!() 
+}
+
+pub fn create_maintinance_tool(app: &Product, maintinance_tool_name: &str) -> std::io::Result<()> {
     unimplemented!() 
 }
 
 pub fn break_symlink_file<P: AsRef<Path>>(link_dir: P, link_name: &str) -> std::io::Result<()> {
     unimplemented!() 
 }
-
 
 impl GlobalConfigImpl for GlobalConfig {
     fn new() -> Self {

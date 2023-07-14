@@ -4,7 +4,7 @@ use async_trait::async_trait;
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
 
-use crate::{http::client::{self, HttpStreamError}, archiving, target::error::{CreateSymlinkError, AppEntryError}};
+use crate::{http::client::{self, HttpStreamError}, archiving, target::error::{SymlinkError, AppEntryError}};
 
 use super::{definitions::*, error::*};
 
@@ -257,12 +257,16 @@ impl InstallyApp
         InstallitionSummary::read_or_create_target(&self.product)
     }
 
-    pub fn symlink_file<P: AsRef<Path>, Q: AsRef<Path>>(&self, original: P, link_dir: Q, link_name: &str) -> Result<(), CreateSymlinkError> {
+    pub fn symlink_file<P: AsRef<Path>, Q: AsRef<Path>>(&self, original: P, link_dir: Q, link_name: &str) -> Result<(), SymlinkError> {
         crate::sys::symlink_file(original, link_dir, link_name)
     }
 
-    pub fn create_app_entry(&self, app: &Product) -> Result<(), AppEntryError> {
-        crate::sys::create_app_entry(app)
+    pub fn create_app_entry(&self, app: &Product, maintinance_tool_name: &str) -> Result<(), AppEntryError> {
+        crate::sys::create_app_entry(app, maintinance_tool_name)
+    }
+
+    pub fn create_maintinance_tool(&self, app: &Product, maintinance_tool_name: &str) -> std::io::Result<()> {
+        crate::sys::create_maintinance_tool(app, maintinance_tool_name)
     }
 
     pub fn create_progress_closure(&self) -> Box<dyn Fn(f32) + Send> {

@@ -8,7 +8,7 @@ pub enum AppEntryError {
 }
 
 #[derive(thiserror::Error, Debug)]
-pub enum CreateSymlinkError {
+pub enum SymlinkError {
     #[error("{0}")]
     OsError(#[from] OsError),
 

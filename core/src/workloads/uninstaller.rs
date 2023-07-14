@@ -74,13 +74,14 @@ impl Workload for UninstallerWrapper {
             })?;
         };
 
-        if all_done {
-            log::info!("Successfully deleted all target packages and their files.");
+        if !all_done {
+            log::info!("Was not able to delete all of the package files.");
         }
 
         if summary.packages.len() == 0 {
             crate::sys::delete_app_entry(&self.app.get_product())
                 .map_err(|err| WorkloadError::Other(format!("Failed to delete app entry. Trace: {}", err)))?;
+            
             log::info!("All packages and their files are deleted. App entry is deleted too.");
         }
 

@@ -66,6 +66,22 @@ pub mod js_app {
             ))
         }
 
+        pub fn set_reg(&self, key: String, name: String, value: String) -> rquickjs::Result<()> {
+            GlobalConfig::new().set(key, name, value).map_err(|err| rquickjs::Error::new_from_js_message(
+                "Global config",
+                "String",
+                format!("Failed to set global config {}", err)
+            ))
+        }
+
+        pub fn delete_reg(&self, key: String) -> rquickjs::Result<()> {
+            GlobalConfig::new().delete(key).map_err(|err| rquickjs::Error::new_from_js_message(
+                "Global config",
+                "String",
+                format!("Failed to delete global config {}", err)
+            ))
+        }
+
         // Event definitions
         pub fn on_before_installition(&self) { }
         pub fn on_after_installition(&self) { }

@@ -25,10 +25,10 @@ use crate::workloads::definitions::Product;
 use super::GlobalConfig;
 use super::GlobalConfigImpl;
 use super::error::AppEntryError;
-use super::error::CreateSymlinkError;
+use super::error::SymlinkError;
 use super::error::OsError;
 
-pub fn symlink_file<P: AsRef<Path>, Q: AsRef<Path>>(original: P, link_dir: Q, link_name: &str) -> Result<(), CreateSymlinkError> {
+pub fn symlink_file<P: AsRef<Path>, Q: AsRef<Path>>(original: P, link_dir: Q, link_name: &str) -> Result<(), SymlinkError> {
     let link = link_dir.as_ref().join(format!("{}.lnk", link_name));
 
     unsafe {
@@ -51,8 +51,8 @@ pub fn break_symlink_file<P: AsRef<Path>>(link_dir: P, link_name: &str) -> std::
     std::fs::remove_file(link_dir.as_ref().join(format!("{}.lnk", link_name)))
 }
 
-pub fn create_app_entry(app: &Product) -> Result<(), AppEntryError> {
-    let maintinance_tool_path = Path::join(Path::new(&app.target_directory), "maintinance.exe");
+pub fn create_app_entry(app: &Product, maintinance_tool_name: &str) -> Result<(), AppEntryError> {
+    let maintinance_tool_path = Path::join(Path::new(&app.target_directory), format!("{}.exe", maintinance_tool_name));
 
     unsafe {
         let mut hkey = HKEY::default();  
@@ -63,6 +63,13 @@ pub fn create_app_entry(app: &Product) -> Result<(), AppEntryError> {
         OsError::into_result(RegCloseKey(hkey))?;
     }
 
+    Ok(())
+}
+
+pub fn create_maintinance_tool(app: &Product, maintinance_tool_name: &str) -> std::io::Result<()> {
+    let exec_path = std::env::current_exe().unwrap();
+    let copy_path = std::path::Path::new(&app.target_directory).join(format!("{}.exe", maintinance_tool_name));
+    _ = std::fs::copy(exec_path, copy_path)?;
     Ok(())
 }
 
@@ -91,17 +98,14 @@ impl GlobalConfigImpl for GlobalConfig {
         let hklm = RegKey::predef(HKEY_CURRENT_USER.0);
         let cur_ver = hklm.open_subkey(key)
             .map_err(|err| OsError::Other(err.to_string()))?;
-        let v: String = cur_ver.get_value(name)
-            .map_err(|err| OsError::Other(err.to_string()))?;
-
-        Ok(v)
+        cur_ver.get_value::<String, _>(name)
+            .map_err(|err| OsError::Other(err.to_string()))
     }
 
     fn delete(&self, key: String) -> Result<(), OsError> {
         let hklm = RegKey::predef(HKEY_CURRENT_USER.0);
         hklm.delete_subkey_all(key)
-            .map_err(|err| OsError::Other(err.to_string()))?;
-        Ok(())
+            .map_err(|err| OsError::Other(err.to_string()))
     }
 }
 
@@ -109,9 +113,9 @@ impl GlobalConfigImpl for GlobalConfig {
 /// Errors
 /// 
 /// //////
-impl std::convert::From<windows::core::Error> for CreateSymlinkError {
+impl std::convert::From<windows::core::Error> for SymlinkError {
     fn from(value: windows::core::Error) -> Self {
-        CreateSymlinkError::OsError(value.into())
+        SymlinkError::OsError(value.into())
     }
 }
 

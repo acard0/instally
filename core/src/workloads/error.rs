@@ -1,15 +1,18 @@
-use crate::{http::client::HttpStreamError, scripting::error::IJSError};
+use crate::{http::client::HttpStreamError, scripting::error::IJSError, helpers::serializer::{SerializationError, self}};
 
 #[derive(thiserror::Error, Debug)]
 pub enum WorkloadError {
     #[error("{0}")]
     Other(String),
 
-    #[error("IJS error accured for package. {0}")]
+    #[error("IJS runtime error accured {0}")]
     IJSError(#[from] ScriptError),
 
     #[error("Could not fetch remote tree. {0}")]
-    RepositoryFetchError(#[from] RepositoryFetchError)
+    RepositoryFetchError(#[from] RepositoryFetchError),
+
+    #[error("IO error accured {0}")]
+    IOError(#[from] std::io::Error),
 }
 
 #[derive(thiserror::Error, Debug)]
@@ -18,7 +21,7 @@ pub enum RepositoryFetchError {
     NetworkError(#[from] HttpStreamError),
 
     #[error("A error accured while parsing remote tree structure. {0}")]
-    ParseError(#[from] quick_xml::DeError),
+    ParseError(#[from] serializer::SerializationError),
 }
 
 #[derive(thiserror::Error, Debug)]
@@ -28,7 +31,7 @@ pub enum WeakStructParseError {
     IOError(#[from] std::io::Error),
     
     #[error("An error accured while parsing weak structure from file. {0}")]
-    ParseError(#[from] quick_xml::DeError)
+    ParseError(#[from] SerializationError)
 }
 
 #[derive(thiserror::Error, Debug)]

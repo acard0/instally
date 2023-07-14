@@ -1,6 +1,6 @@
 use std::{ops::{Deref, DerefMut}, io::{Read, Write, Seek}, path::{PathBuf, Path}, process::Command};
 
-use crate::{http::client, helpers::{versioning::version_compare, formatter::TemplateFormat}, scripting::{builder::{IJSContext, IJSRuntime}, error::IJSError}};
+use crate::{http::client, helpers::{versioning::version_compare, formatter::TemplateFormat, serializer}, scripting::{builder::{IJSContext, IJSRuntime}, error::IJSError}};
 
 use super::{abstraction::InstallyApp, error::{WeakStructParseError, PackageUninstallError, RepositoryCrossCheckError, RepositoryFetchError, ScriptError}};
 
@@ -24,20 +24,11 @@ impl Product{
     }
 
     pub fn read_file<P: AsRef<Path>>(path: P) -> Result<Product, WeakStructParseError> {
-        let mut file = std::fs::OpenOptions::new()
-            .read(true).open(path)?;
-
-        let mut xml = String::new();
-
-        file.read_to_string(&mut xml)?;
-        let product: Product = quick_xml::de::from_str(&xml)?;
-
+        let product: Product = serializer::from_file(path)?;
         let formatter = product.create_formatter();
-        let back_step = quick_xml::se::to_string(&product)?;
+        let back_step = serializer::to_xml(&product)?;
         let xml = formatter.format(&back_step);
-
-        let product: Product = quick_xml::de::from_str(&xml)?; 
-
+        let product: Product = serializer::from_str(&xml)?;
         Ok(product)
     }
 
@@ -97,27 +88,21 @@ impl Product{
     }
 
     pub async fn fetch_repository(&self) -> Result<Repository, RepositoryFetchError> {
-        let xml_uri = format!("{}meta.xml", &self.repository);
+        let xml_uri = format!("{}repository.xml", &self.repository);
         let mut xml = client::get_text(&xml_uri, |_| ()).await?;
         xml = self.create_formatter().format(&xml);
 
-        let repository: Repository = quick_xml::de::from_str(&xml)?;
+        let repository: Repository = serializer::from_str(&xml)?;
 
         log::info!("Fetched and parsed Repository structure for {}", self.name);
         Ok(repository)
     }
 
     pub fn dump(&self) -> Result<(), WeakStructParseError> {
-        let payload = quick_xml::se::to_string(&self)?;
-
         let mut file = std::fs::OpenOptions::new().create(true).write(true).
             read(true).truncate(true).open(&self.get_path_to_self_struct_target())?;
 
-        let xml_decl = b"<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\" ?>\n";
-        let mut xml = xml_decl.to_vec();
-        xml.extend(payload.as_bytes());
-
-        file.write_all(&xml)?;
+        file.write_all(serializer::to_xml(self)?.as_bytes())?;
 
         Ok(())
     }
@@ -148,6 +133,27 @@ impl Repository {
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "PascalCase")]
+pub struct PackageDefinition {
+    pub name: String,
+    pub display_name: String,
+    pub version: String,
+    pub release_date: String,
+    pub default: bool,
+    pub script: String
+}
+
+impl PackageDefinition {
+    pub fn from_file<P: AsRef<Path>>(path: P) -> Result<PackageDefinition, WeakStructParseError> {
+        Ok(serializer::from_file(path)?)
+    }
+
+    pub fn define(&self, archive: &str, sha1: &str, script: &str) -> Package {
+        Package::from_definition(self, archive, sha1, script)
+    }
+}
+
+#[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "PascalCase")]
 pub struct Package {
     pub name: String,
     pub display_name: String,
@@ -161,11 +167,20 @@ pub struct Package {
 
 impl Package {
     pub fn from_file<P: AsRef<Path>>(path: P) -> Result<Package, WeakStructParseError> {
-        let mut file = std::fs::OpenOptions::new().read(true).open(path)?;
-        let mut xml = String::new();
-        file.read_to_string(&mut xml)?;
-        let package: Package = quick_xml::de::from_str(&xml)?;
-        Ok(package)
+        Ok(serializer::from_file(path)?)
+    }
+
+    pub fn from_definition(definition: &PackageDefinition, archive: &str, sha1: &str, script: &str) -> Package {
+        Package {
+            name: definition.name.clone(),
+            display_name: definition.display_name.clone(),
+            version: definition.version.clone(),
+            release_date: definition.release_date.clone(),
+            default: definition.default,
+            archive: archive.to_owned(),
+            sha1: sha1.to_owned(),
+            script: script.to_owned()
+        }
     }
 }
 
@@ -301,7 +316,7 @@ impl InstallitionSummary {
         file.read_to_string(&mut weak_struct)?;
         weak_struct = product.create_formatter().format(&weak_struct);
 
-        let inner: InstallitionSummaryInner = match quick_xml::de::from_str(&weak_struct) {
+        let inner: InstallitionSummaryInner = match serializer::from_str(&weak_struct) {
             Ok(r) => r,
             Err(some) => {
                 log::info!("Failed to deserialize installition summary file. Using default. Trace: {:?}", some);
@@ -398,18 +413,10 @@ impl InstallitionSummary {
     }
     
     pub fn save(&mut self) -> Result<&mut Self, WeakStructParseError> {
-        let xml_decl = b"<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\" ?>\n";
-        let xml_str = quick_xml::se::to_string(&self.inner)?;
-    
-        let mut xml = xml_decl.to_vec();
-        xml.extend(xml_str.as_bytes());
-
         let mut file = std::fs::File::options().create(true).read(true)
-            .write(true).open(self.path.clone())?;
+            .truncate(true).write(true).open(self.path.clone())?;
 
-        file.set_len(0)?;
-        file.rewind()?;
-        file.write_all(&xml)?;
+        file.write_all(serializer::to_xml(&self.inner)?.as_bytes())?;
 
         Ok(self)
     }
