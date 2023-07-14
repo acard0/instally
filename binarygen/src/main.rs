@@ -1,5 +1,5 @@
 use std::fmt;
-use std::fs::{OpenOptions}; 
+use std::fs::OpenOptions;
 use std::io::{Seek, Write, Read};
 use std::io::SeekFrom::Start;
 

@@ -1,5 +1,3 @@
-#![feature(async_closure)]
-
 pub mod http;
 pub mod workloads;
 pub mod archiving;
