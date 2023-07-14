@@ -4,7 +4,7 @@ use rquickjs::{FromJs, Ctx, Value};
 #[rquickjs::bind(object, public)]
 #[quickjs(bare)]
 pub mod js_app {
-    use crate::{workloads::abstraction::InstallyApp, extensions::future::FutureSyncExt};
+    use crate::{workloads::abstraction::InstallyApp, extensions::future::FutureSyncExt, target::{GlobalConfig, GlobalConfigImpl}};
 
     pub struct InstallerJ {
         #[quickjs(readonly)]
@@ -56,6 +56,14 @@ pub mod js_app {
             }
 
             Ok(())
+        }
+
+        pub fn read_reg(&self, key: String, name: String) -> rquickjs::Result<String> {
+            GlobalConfig::new().get(key, name).map_err(|err| rquickjs::Error::new_from_js_message(
+                "Global config",
+                "String",
+                format!("Failed to read global config {}", err)
+            ))
         }
 
         // Event definitions

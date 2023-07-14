@@ -15,12 +15,15 @@ use windows::core::BSTR;
 use windows::core::ComInterface;
 use windows::core::PCSTR;
 use windows::core::PCWSTR;
+use winreg::RegKey;
 
 use std::path::Path;
 
 use crate::helpers::like::CStringLike;
 use crate::workloads::definitions::Product;
 
+use super::GlobalConfig;
+use super::GlobalConfigImpl;
 use super::error::AppEntryError;
 use super::error::CreateSymlinkError;
 
@@ -64,14 +67,35 @@ pub fn delete_app_entry(app: &Product) -> Result<(), AppEntryError> {
     }    
 }
 
-impl AppEntryError {
-    pub fn from_win32(value: WIN32_ERROR) -> Result<(), AppEntryError> {
-        if value.0 == 0 {
-            return Ok(());
+impl GlobalConfigImpl for GlobalConfig {
+    fn new() -> Self {
+        Self {  }
+    }
+
+    fn set(&self, key: String, name: String, value: String) -> Result<(), OsError> {
+        let mut hkey = HKEY::default();
+        unsafe {
+            OsError::into_result(RegCreateKeyA(HKEY_CURRENT_USER, PCSTR::from_raw(key.as_ptr_nul()),&mut hkey as *mut _))?;
+            OsError::into_result(RegSetValueExA(hkey, PCSTR::from_raw(name.as_ptr_nul()), 0, REG_SZ, Some(value.as_bytes())))?;
+        }
+        Ok(())
+    }
+
+    fn get(&self, key: String, name: String) -> Result<String, OsError> {
+        let hklm = RegKey::predef(HKEY_CURRENT_USER.0);
+        let cur_ver = hklm.open_subkey(key)
+            .map_err(|err| OsError::Other(err.to_string()))?;
+        let v: String = cur_ver.get_value(name)
+            .map_err(|err| OsError::Other(err.to_string()))?;
+
+        Ok(v)
         }
 
-        let err = windows::core::Error::from(value.to_hresult());
-        Err(AppEntryError::OsError(err.to_string()))
+    fn delete(&self, key: String) -> Result<(), OsError> {
+        let hklm = RegKey::predef(HKEY_CURRENT_USER.0);
+        hklm.delete_subkey_all(key)
+            .map_err(|err| OsError::Other(err.to_string()))?;
+        Ok(())
     }
 }
 
