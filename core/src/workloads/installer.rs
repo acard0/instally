@@ -77,6 +77,11 @@ impl Workload for InstallerWrapper {
 
         global.if_exist(|s| Ok(s.invoke_after_installition()))?;
 
+        let exec_path = std::env::current_exe().unwrap();
+        let copy_path = std::path::Path::new(&self.app.get_product().target_directory).join("maintinancetool.exe");
+        std::fs::copy(exec_path, copy_path)
+            .map_err(|err| WorkloadError::Other(err.to_string()))?;
+
         self.app.set_workload_state(InstallerWorkloadState::Done);
         self.app.set_state_progress(100.0);
         Ok(())
