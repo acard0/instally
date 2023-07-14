@@ -45,6 +45,8 @@ impl Product{
         let directories = UserDirs::new().unwrap(); 
 
         TemplateFormat::new()
+            .add_replacement("System.Os", std::env::consts::OS)
+            .add_replacement("System.Os.Version", std::env::var_os("VERSION").unwrap_or("N/A".into()).to_str().unwrap())
             .add_replacement("App.Name", &self.name)
             .add_replacement("App.Publisher", &self.publisher)
             .add_replacement("App.ProductUrl", &self.product_url)
