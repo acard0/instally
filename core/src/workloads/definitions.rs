@@ -36,7 +36,7 @@ impl Product{
         let directories = UserDirs::new().unwrap(); 
 
         TemplateFormat::new()
-            .add_replacement("System.Os", std::env::consts::OS)
+            .add_replacement("System.Os.Name", std::env::consts::OS)
             .add_replacement("System.Os.Version", std::env::var_os("VERSION").unwrap_or("N/A".into()).to_str().unwrap())
             .add_replacement("App.Name", &self.name)
             .add_replacement("App.Publisher", &self.publisher)
@@ -339,7 +339,7 @@ impl InstallitionSummary {
     pub fn cross_check(&self, packages: &[Package]) -> Result<CrossCheckSummary, RepositoryCrossCheckError> {
         let mut updates = vec![];
         let mut map = vec![];
-
+        let mut not_installed = vec![];
         for remote in packages.iter() {
             match self.find(remote) {
                 Some(local) => {
@@ -350,14 +350,15 @@ impl InstallitionSummary {
                     }
                 }
                 None => { 
-                    // package is not installed on local
+                    not_installed.push(remote.clone());
                 }
             }
         }
 
         Ok(CrossCheckSummary { 
             map,
-            updates
+            updates,
+            not_installed
         })
     }
     
@@ -455,5 +456,6 @@ pub struct PackagePair {
 
 pub struct CrossCheckSummary {
     pub map: Vec<PackagePair>,
-    pub updates: Vec<PackagePair>
+    pub updates: Vec<PackagePair>,
+    pub not_installed: Vec<Package>
 }

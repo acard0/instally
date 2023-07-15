@@ -272,7 +272,7 @@ impl InstallyApp
     pub fn create_progress_closure(&self) -> Box<dyn Fn(f32) + Send> {
         let arc = self.get_context(); 
         Box::new(move |progress: f32| {
-            arc.lock().state_progress = progress; 
+            arc.lock().update_field(AppContextField::state_progress(progress));
         })
     }
 }

@@ -8,11 +8,20 @@ pub trait FutureSyncExt {
 impl<F, T> FutureSyncExt for F where F: Future<Output = T> {
     type Output = T;
     fn wait(self) -> Self::Output {
-        tokio::task::block_in_place(move || {
-            tokio::runtime::Handle::current()
-            .block_on(async move {
-                self.await
-            })
-        })
+        match tokio::runtime::Handle::try_current() {
+            Ok(_) => {
+                tokio::task::block_in_place(move || {
+                    tokio::runtime::Handle::current()
+                    .block_on(async move {
+                        self.await
+                    })
+                })
+            },
+
+            _ => {
+                tokio::runtime::Runtime::new().unwrap()
+                    .block_on(self)
+            }
+        }
    }
 }
