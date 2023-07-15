@@ -129,6 +129,13 @@ impl Repository {
         self.packages.iter().find(|e| e.name == package_name)
             .map(|f| f.clone())
     }
+
+    pub fn get_default_packages(&self) -> Vec<Package> {
+        self.packages.iter()
+            .filter(|e| e.default)
+            .cloned()
+            .collect()
+    }
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
@@ -254,9 +261,7 @@ impl DependencyFile {
         let (_, path) = self.handle.keep().unwrap();
 
         let mut cmd = Command::new(format!("{}", path.to_str().unwrap()));
-        arguments.iter().for_each(|f| {
-            cmd.arg(f);
-        });
+        cmd.args(arguments);
 
         let handle = cmd.spawn().unwrap();
 

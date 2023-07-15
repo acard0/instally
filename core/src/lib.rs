@@ -1,3 +1,5 @@
+#![allow(dead_code, unused_variables)]
+
 pub mod http;
 pub mod workloads;
 pub mod archiving;

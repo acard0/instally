@@ -40,17 +40,13 @@ impl Workload for InstallerWrapper {
             .map_err(|e| WorkloadError::Other(e.to_string()))?;
 
         let targets = match &self.settings.target_packages {
-            None => repository.packages,
+            None => repository.get_default_packages(),
             Some(t) => t.to_vec()
         };
 
         log::info!("Packages in installition queue: {}", targets.iter().map(|e| e.display_name.clone()).collect::<Vec<_>>().join(", "));
 
-        for package in targets {
-            if !package.default {
-                continue;
-            } 
-                
+        for package in targets {  
             let script = self.app.get_package_script(&package).await?;
             script.if_exist(|s| {
                 s.invoke_before_installition();
