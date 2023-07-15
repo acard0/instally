@@ -12,6 +12,7 @@ mod app;
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let rust_log = std::env::var("RUST_LOG").unwrap_or("info".into()); 
     std::env::set_var("RUST_LOG", rust_log);  
+    std::env::set_var("STANDALONE_EXECUTION", "1");  
     env_logger::init();
 
     let payload_result = quick_xml::de::from_str(PAYLOAD.strip_prefix("###/PAYLOAD/###").unwrap());
