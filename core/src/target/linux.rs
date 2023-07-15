@@ -9,11 +9,11 @@ pub fn symlink_file<P: AsRef<Path>, Q: AsRef<Path>>(original: P, link_dir: Q, li
     unimplemented!() 
 }
 
-pub fn create_app_entry(app: &Product, maintinance_tool_name: &str) -> Result<(), AppEntryError> {
+pub fn create_app_entry(app: &Product, maintenance_tool_name: &str) -> Result<(), AppEntryError> {
     unimplemented!() 
 }
 
-pub fn create_maintinance_tool(app: &Product, maintinance_tool_name: &str) -> std::io::Result<()> {
+pub fn create_maintenance_tool(app: &Product, maintenance_tool_name: &str) -> std::io::Result<()> {
     unimplemented!() 
 }
 

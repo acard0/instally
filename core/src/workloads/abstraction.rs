@@ -261,12 +261,12 @@ impl InstallyApp
         crate::sys::symlink_file(original, link_dir, link_name)
     }
 
-    pub fn create_app_entry(&self, app: &Product, maintinance_tool_name: &str) -> Result<(), AppEntryError> {
-        crate::sys::create_app_entry(app, maintinance_tool_name)
+    pub fn create_app_entry(&self, app: &Product, maintenance_tool_name: &str) -> Result<(), AppEntryError> {
+        crate::sys::create_app_entry(app, maintenance_tool_name)
     }
 
-    pub fn create_maintinance_tool(&self, app: &Product, maintinance_tool_name: &str) -> std::io::Result<()> {
-        crate::sys::create_maintinance_tool(app, maintinance_tool_name)
+    pub fn create_maintenance_tool(&self, app: &Product, maintenance_tool_name: &str) -> std::io::Result<()> {
+        crate::sys::create_maintenance_tool(app, maintenance_tool_name)
     }
 
     pub fn create_progress_closure(&self) -> Box<dyn Fn(f32) + Send> {

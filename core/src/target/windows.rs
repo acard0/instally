@@ -67,9 +67,9 @@ pub fn create_app_entry(app: &Product, maintinance_tool_name: &str) -> Result<()
     Ok(())
 }
 
-pub fn create_maintinance_tool(app: &Product, maintinance_tool_name: &str) -> std::io::Result<()> {
+pub fn create_maintenance_tool(app: &Product, maintenance_tool_name: &str) -> std::io::Result<()> {
     let exec_path = std::env::current_exe().unwrap();
-    let copy_path = std::path::Path::new(&app.target_directory).join(format!("{}.exe", maintinance_tool_name));
+    let copy_path = std::path::Path::new(&app.target_directory).join(format!("{}.exe", maintenance_tool_name));
     _ = std::fs::copy(exec_path, copy_path)?;
     Ok(())
 }

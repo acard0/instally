@@ -76,7 +76,7 @@ impl Workload for InstallerWrapper {
             })?;
         }
 
-        self.app.create_app_entry(&self.app.get_product(), "maintinancetool")
+        self.app.create_app_entry(&self.app.get_product(), "maintenancetool")
             .map_err(|err| WorkloadError::Other(format!("Failed to create app entry: {}", err.to_string())))?;
         
         if std::env::var("STANDALONE_EXECUTION").is_ok() {
