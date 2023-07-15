@@ -64,6 +64,7 @@ impl IJSContext {
 
             global.init_def::<Sleep>().unwrap();
             global.init_def::<Print>().unwrap();
+            global.init_def::<Log>().unwrap();
             global.init_def::<JsApp>().unwrap();
             global.set("Installer", j_object).unwrap();
 
@@ -170,6 +171,15 @@ async fn sleep(msecs: u64) -> rquickjs::Result<()> {
 }
 
 #[rquickjs::bind(object)]
+fn log(msg: String) {
+    #[cfg(not(test))]
+    log::info!("IJS RUNTIME: {msg:?}");
+
+    #[cfg(test)]
+    println!("IJS RUNTIME: {msg:?}");
+}
+
+#[rquickjs::bind(object)]
 fn print(msg: String) {
     println!("IJS RUNTIME: {msg:?}");
 }
@@ -195,25 +205,32 @@ mod tests {
         let ctx = rt.create_context(InstallyApp::new(product));
         
         let _: () = ctx.eval_raw(r#"
-            print('Installed OS: ' + System.Os.Name);
+        log('Installed OS: ' + System.Os.Name);
 
             if (System.Os.Name === "windows") {
-                print('Detected os is Windows. Checking WebView2 installation.');
+                var webview2_uri = 'https://msedge.sf.dl.delivery.mp.microsoft.com/filestreamingservice/files/6e5c75e2-3d95-4b41-abcb-dc6cef509a32/MicrosoftEdgeWebView2RuntimeInstallerX64.exe';
+                var dotnet_uri = 'https://download.visualstudio.microsoft.com/download/pr/1146f414-17c7-4184-8b10-1addfa5315e4/39db5573efb029130add485566320d74/windowsdesktop-runtime-6.0.20-win-x64.exe';
+
+                log('Detected os is Windows. Checking WebView2 installation.');
 
                 try 
                 {
+                    log("Checking WebView2 version");
                     var key = "HKEY_LOCAL_MACHINE\\SOFTWARE\\WOW6432Node\\Microsoft\\EdgeUpdate\\Clients\\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}";
-    
-                    print("Checking WebView2 version");
                     var pv = Installer.read_reg(key, "pv");
-                    
-                    print(`WebView2 version: ${pv}`);
+                    log(`WebView2 version: ${pv}`);
                 } catch (err) {
-                    print('WebView2 is not installed. Installing...');
-
-                    var args = [ "/silent", "/install" ];
-                    Installer.get_and_execute('https://cdn.liteware.xyz/instally/thirdparty/MicrosoftEdgeWebView2RuntimeInstallerX64.exe', args, 'Installing WebView2');
+                    log('WebView2 is not installed. Installing...');
+                    Installer.get_and_execute(webview2_uri, [ "/silent", "/install" ], 'Installing WebView2');
                 }
+                log('WebView2 is installed.');
+
+                log('Checking .NET 6 installation.');
+                if (!Installer.try_command('dotnet', ['--list-runtimes'], true)) {
+                    log('.NET 6 is not installed. Installing...');
+                    Installer.get_and_execute(dotnet_uri, [ "/install", "/quiet", "/norestart" ], 'Installing .NET 6')
+                }
+                log('.NET 6 is installed.');
             }
         "#).unwrap();
 

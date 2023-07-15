@@ -82,6 +82,31 @@ pub mod js_app {
             ))
         }
 
+        pub fn try_command(&self, command: String, arguments: rquickjs::Array<'_>, attached: bool) -> rquickjs::Result<bool> {
+            let arguments = arguments.iter::<String>()
+                .map(|f| format!("{}", f.unwrap()))
+                .collect::<Vec<String>>();
+
+            let mut cmd = std::process::Command::new(command);
+            cmd.args(arguments);
+    
+            let handle = cmd.spawn().unwrap();
+            if attached {
+                handle.wait_with_output().unwrap();
+            }
+
+            match cmd.status() {
+                Ok(status) => {
+                    log::trace!("Command {:?} executed with status {}", cmd, status);
+                    Ok(status.success())
+                },
+                Err(err) => {
+                    log::trace!("Command {:?} failed with error {:?}", cmd, err);
+                    Ok(false)
+                }
+            }        
+        }
+
         // Event definitions
         pub fn on_before_installition(&self) { }
         pub fn on_after_installition(&self) { }
