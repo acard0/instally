@@ -5,6 +5,7 @@ use windows::Win32::System::Com::CoInitialize;
 use windows::Win32::System::Com::IPersistFile;
 use windows::Win32::System::Registry::HKEY;
 use windows::Win32::System::Registry::HKEY_CURRENT_USER;
+use windows::Win32::System::Registry::HKEY_LOCAL_MACHINE;
 use windows::Win32::System::Registry::REG_SZ;
 use windows::Win32::System::Registry::RegCloseKey;
 use windows::Win32::System::Registry::RegCreateKeyA;
@@ -95,16 +96,28 @@ impl GlobalConfigImpl for GlobalConfig {
     }
 
     fn get(&self, key: String, name: String) -> Result<String, OsError> {
-        let hklm = RegKey::predef(HKEY_CURRENT_USER.0);
-        let cur_ver = hklm.open_subkey(key)
+        let hklm_str = key.split('\\').collect::<Vec<&str>>();
+        let hkey = match hklm_str[0] {
+            "HKEY_CURRENT_USER" => RegKey::predef(HKEY_CURRENT_USER.0),
+            "HKEY_LOCAL_MACHINE" => RegKey::predef(HKEY_LOCAL_MACHINE.0),
+            _ => return Err(OsError::Other(format!("Unsupported HKEY: {}", hklm_str[0])))
+        };
+
+        let cur_ver = hkey.open_subkey(&hklm_str[1..].join("\\"))
             .map_err(|err| OsError::Other(err.to_string()))?;
         cur_ver.get_value::<String, _>(name)
             .map_err(|err| OsError::Other(err.to_string()))
     }
 
     fn delete(&self, key: String) -> Result<(), OsError> {
-        let hklm = RegKey::predef(HKEY_CURRENT_USER.0);
-        hklm.delete_subkey_all(key)
+        let hklm_str = key.split('\\').collect::<Vec<&str>>();
+        let hkey = match hklm_str[0] {
+            "HKEY_CURRENT_USER" => RegKey::predef(HKEY_CURRENT_USER.0),
+            "HKEY_LOCAL_MACHINE" => RegKey::predef(HKEY_LOCAL_MACHINE.0),
+            _ => return Err(OsError::Other(format!("Unsupported HKEY: {}", hklm_str[0])))
+        };
+
+        hkey.delete_subkey_all(&hklm_str[1..].join("\\"))
             .map_err(|err| OsError::Other(err.to_string()))
     }
 }
