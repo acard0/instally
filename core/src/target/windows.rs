@@ -189,7 +189,7 @@ mod tests {
         use super::GlobalConfig;
 
         let config = GlobalConfig::new();
-        let key = "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\test".to_string();
+        let key = "HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\test".to_string();
         config.set(key.clone(), "DisplayName".to_string(), "test".to_string()).unwrap();
         let v = config.get(key.clone(), "DisplayName".to_string()).unwrap();
         config.delete(key).unwrap();
