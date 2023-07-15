@@ -47,6 +47,10 @@ impl Workload for InstallerWrapper {
         log::info!("Packages in installition queue: {}", targets.iter().map(|e| e.display_name.clone()).collect::<Vec<_>>().join(", "));
 
         for package in targets {
+            if !package.default {
+                continue;
+            } 
+                
             let script = self.app.get_package_script(&package).await?;
             script.if_exist(|s| {
                 s.invoke_before_installition();
