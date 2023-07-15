@@ -3,10 +3,14 @@
 mod macros;
 mod ffi;
 
+use std::sync::atomic::AtomicBool;
+
 use ffi::{CallResult, CPackageVersioning, CAppState};
 use instally_core::{self, workloads::{updater::UpdaterOptions, abstraction::AppContextNotifiable, uninstaller::UninstallerOptions, definitions::{InstallitionSummary, Repository, Product, Package}, installer::InstallerOptions}, factory::{WorkloadType, self}, extensions::future::FutureSyncExt};
 
 use crate::ffi::ByteBuffer;
+
+static ON_WORK: AtomicBool = std::sync::atomic::AtomicBool::new(false);
 
 pub struct Meta {
     pub product: Product,
@@ -30,25 +34,32 @@ impl Meta {
 
 #[no_mangle] 
 pub unsafe extern "C" fn check_updates(m_packages: *mut ByteBuffer) -> *mut CallResult::<ByteBuffer> {  
-    let packages = m_packages.read()
-        .into_string_vec();
-     
-    println!("Target packages are {:?}", packages);
-
     let meta = Meta::get();
+    let packages = match m_packages {
+        buff if (*buff).ptr() != std::ptr::null_mut() => {
+            let packages = m_packages.read()
+                .into_string_vec();
 
-    let packages = meta.repository.packages.iter()
-        .filter(|f| packages.contains(&f.name))
-        .cloned().collect::<Vec<Package>>();
+            log::info!("Target packages are: {:?}", packages);   
 
-    println!("Installed packages that are targetted: {:?}", packages);
+            meta.repository.packages.iter()
+                .filter(|f| packages.contains(&f.name))
+                .cloned().collect::<Vec<Package>>()
+        },
+        _ => {
+            log::info!("Target packages are: all");
+            meta.repository.packages.clone()
+        }
+    };
 
     let version_summary = meta.installition_summary.cross_check(&packages).unwrap();
-    let c_arr  = version_summary.updates.iter()
+    let mut c_arr  = version_summary.map.iter()
         .map(|n| CPackageVersioning::new(n))
         .collect::<Vec<_>>();
 
-    println!("Summary: {:?}", c_arr);
+    version_summary.not_installed.iter().for_each(|n| {
+        c_arr.push(CPackageVersioning::new_not_installed(n));
+    });
 
     CallResult::new(ByteBuffer::from_vec_struct(c_arr), None)
         .into_raw()
@@ -56,14 +67,14 @@ pub unsafe extern "C" fn check_updates(m_packages: *mut ByteBuffer) -> *mut Call
 
 #[no_mangle]
 pub unsafe extern "C" fn apply_updates(m_packages: *mut ByteBuffer, state_callback: extern "C" fn(CAppState)) {
-    let binding = m_packages.read();
-    let packages = binding
-        .into_slice::<CPackageVersioning>();
+    let packages = m_packages.read()
+        .into_string_vec();
+    log::info!("Target packages are: {:?}", packages);
 
     let meta = Meta::get();
 
     let target_packages = meta.installition_summary.packages.iter()
-        .filter(|f| packages.iter().any(|p| p.get_name() == f.name))
+        .filter(|f| packages.iter().any(|p| p == &f.name))
         .cloned().collect::<Vec<_>>();
 
     execute_blocking(
@@ -75,15 +86,16 @@ pub unsafe extern "C" fn apply_updates(m_packages: *mut ByteBuffer, state_callba
 
 #[no_mangle]
 pub unsafe extern "C" fn remove_package(m_packages: *mut ByteBuffer, state_callback: extern "C" fn(CAppState)) {
-    let binding = m_packages.read();
-    let packages = binding
-        .into_slice::<CPackageVersioning>();
+    let packages = m_packages.read()
+        .into_string_vec();
+
+    log::info!("Target packages are: {:?}", packages);
 
     let meta = Meta::get();
 
     let target_packages = meta.installition_summary.packages.iter()
-    .filter(|f| packages.iter().any(|p| p.get_name() == f.name))
-    .cloned().collect::<Vec<_>>();
+        .filter(|f| packages.iter().any(|p| p == &f.name))
+        .cloned().collect::<Vec<_>>();
 
     execute_blocking(
         &meta.product,
@@ -97,7 +109,7 @@ pub unsafe extern "C" fn install_package(m_packages: *mut ByteBuffer, state_call
     let packages = m_packages.read()
         .into_string_vec();
      
-    println!("Target packages are {:?}", packages);
+    log::info!("Target packages are {:?}", packages);
 
     let meta = Meta::get();
 
@@ -113,15 +125,22 @@ pub unsafe extern "C" fn install_package(m_packages: *mut ByteBuffer, state_call
 }
 
 fn execute_blocking(product_meta: &Product, settings: WorkloadType, state_callback: extern "C" fn(CAppState)) {
+    if ON_WORK.load(std::sync::atomic::Ordering::Relaxed) {
+        return;
+    }
+
+    ON_WORK.store(true, std::sync::atomic::Ordering::Relaxed);
+
     let runtime_executor = factory::run_tokio(&product_meta, settings);
 
-    runtime_executor.executor.app.get_context().lock().subscribe(Box::new(move |f| {
+    let sub_id = runtime_executor.executor.app.get_context().lock().subscribe(Box::new(move |f| {
         state_callback(f.state_cloned.clone().into());
-        println!("change. state: {:?}, changed: {:?}, progress: {}", f.state_cloned.get_state(), f.field_cloned, f.state_cloned.get_progress());
     }));
 
     let out = runtime_executor.runtime
         .block_on(runtime_executor.executor.handle);
 
-    println!("result?: {out:?}");
+    runtime_executor.executor.app.get_context().lock().unsubscribe(sub_id);
+
+    ON_WORK.store(false, std::sync::atomic::Ordering::Relaxed);
 }

@@ -1,6 +1,6 @@
 use std::{ffi::{c_char, CStr}, cmp::Ordering};
 
-use instally_core::{helpers::{like::CStringLike, versioning::version_compare}, workloads::{definitions::PackagePair, abstraction::AppContext}};
+use instally_core::{helpers::{like::CStringLike, versioning::version_compare}, workloads::{definitions::{PackagePair, Package}, abstraction::AppContext}};
 
 #[repr(C)]
 pub struct CallResult<T> {
@@ -30,19 +30,38 @@ impl<T> CallResult<T> {
 #[derive(Debug, Clone)]
 pub struct CPackageVersioning {
     name: *const i8,
+    display_name: *const i8,
     v_current: *const i8,
     v_latest: *const i8,
-    outdated: bool
+    default: i32,
+    state: i32,
 }
 
 impl CPackageVersioning {
     pub fn new(cross: &PackagePair) -> Self {
         CPackageVersioning {
             name: cross.local.name.as_c_char_ptr(),
+            display_name: cross.local.display_name.as_c_char_ptr(),
             v_current: cross.local.version.as_c_char_ptr(),
             v_latest: cross.remote.version.as_c_char_ptr(),
-            outdated: version_compare(&cross.remote.version, &cross.local.version) == Ordering::Greater,
+            default: cross.remote.default as i32,
+            state: match version_compare(&cross.remote.version, &cross.local.version) {
+                Ordering::Greater => 1,
+                Ordering::Less => -1,
+                Ordering::Equal => 0,
+            }
         }       
+    }
+
+    pub fn new_not_installed(remote: &Package) -> Self {
+        CPackageVersioning {
+            name: remote.name.as_c_char_ptr(),
+            display_name: remote.display_name.as_c_char_ptr(),
+            v_current: "0".as_c_char_ptr(),
+            v_latest: remote.version.as_c_char_ptr(),
+            default: remote.default as i32,
+            state: -2,
+        }
     }
 
     pub fn get_name(&self) -> String {
@@ -58,7 +77,7 @@ impl CPackageVersioning {
     }
 
     pub fn get_outdated(&self) -> bool {
-        self.outdated
+        self.state == 1
     }
 }
 
