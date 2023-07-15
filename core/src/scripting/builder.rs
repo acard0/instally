@@ -171,5 +171,53 @@ async fn sleep(msecs: u64) -> rquickjs::Result<()> {
 
 #[rquickjs::bind(object)]
 fn print(msg: String) {
-    log::info!("IJS RUNTIME: {msg:?}");
+    println!("IJS RUNTIME: {msg:?}");
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::workloads::definitions::Product;
+
+    use super::*;
+
+    #[test]
+    fn test_js_runtime() {
+        let product = Product {
+            name: "Tutucu".to_owned(),
+            publisher: "liteware".to_owned(),
+            product_url: "https://liteware.io".to_owned(),
+            target_directory: "C:\\Users\\doquk\\AppData\\Roaming\\liteware.io\\Tutucu".to_owned(),
+            repository: "https://cdn.liteware.xyz/instally/tutucu/release/".to_owned(),
+            script: "".to_owned(),
+        };
+
+        let rt = IJSRuntime::current_or_get();
+        let ctx = rt.create_context(InstallyApp::new(product));
+        
+        let _: () = ctx.eval_raw(r#"
+            print('Installed OS: ' + System.Os.Name);
+
+            if (System.Os.Name === "windows") {
+                print('Detected os is Windows. Checking WebView2 installation.');
+
+                try 
+                {
+                    var key = "HKEY_LOCAL_MACHINE\\SOFTWARE\\WOW6432Node\\Microsoft\\EdgeUpdate\\Clients\\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}";
+    
+                    print("Checking WebView2 version");
+                    var pv = Installer.read_reg(key, "pv");
+                    
+                    print(`WebView2 version: ${pv}`);
+                } catch (err) {
+                    print('WebView2 is not installed. Installing...');
+
+                    var args = [ "/silent", "/install" ];
+                    Installer.get_and_execute('https://cdn.liteware.xyz/instally/thirdparty/MicrosoftEdgeWebView2RuntimeInstallerX64.exe', args, 'Installing WebView2');
+                }
+            }
+        "#).unwrap();
+
+        ctx.free();
+        rt.free();
+    }
 }
