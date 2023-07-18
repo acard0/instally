@@ -24,11 +24,15 @@ impl Product{
     }
 
     pub fn read_file<P: AsRef<Path>>(path: P) -> Result<Product, WeakStructParseError> {
-        let product: Product = serializer::from_file(path)?;
-        let formatter = product.create_formatter();
-        let back_step = serializer::to_xml(&product)?;
+        let template: Product = serializer::from_file(path)?;
+        Self::from_template(template)
+    }
+
+    pub fn from_template(template: Product) -> Result<Product, WeakStructParseError> {
+        let formatter = template.create_formatter();
+        let back_step = serializer::to_xml(&template).unwrap();
         let xml = formatter.format(&back_step);
-        let product: Product = serializer::from_str(&xml)?;
+        let product: Product = serializer::from_str(&xml).unwrap();
         Ok(product)
     }
 
