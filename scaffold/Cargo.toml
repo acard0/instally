@@ -7,9 +7,7 @@ edition = "2021"
 
 [dependencies]
 instally-core = { path = "../core" }
-egui = "0.22.0"
-eframe = "0.22.0"
-catppuccin-egui = "3.0.0"
+eframe = { git = "https://github.com/rustytsuki/egui", branch = "rust-office", default-features = false, features = ["skia", "default_fonts"] }
 tokio = { version = "1.0", features = ["full"] }
 serde = { version = "1.0.164", features = ["derive"] }
 quick-xml = { version = "0.29.0", features = ["serialize"] }

@@ -1,4 +1,5 @@
 
+use eframe::egui;
 use instally_core::{factory::{WorkloadType, Executor}, workloads::{abstraction::InstallyApp, definitions::Product}};
 
 pub fn run(product_meta: &Product, settings: WorkloadType, do_spawn_ui: bool) -> Executor {
