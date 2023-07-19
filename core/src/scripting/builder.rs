@@ -43,8 +43,8 @@ impl IJSRuntime {
         unsafe { (*self.rt).clone() }
     }
 
-    pub fn create_context(&self, app: InstallyApp) -> IJSContext {
-        IJSContext::new(&self, app)
+    pub fn create_context(&self, app: &InstallyApp) -> IJSContext {
+        IJSContext::new(&self, app.clone())
     }
 
     pub fn free(&self) {
@@ -200,9 +200,11 @@ mod tests {
             repository: "https://cdn.liteware.xyz/instally/tutucu/release/".to_owned(),
             script: "".to_owned(),
         };
+        let app = InstallyApp::build(&product)
+            .wait().unwrap();
 
         let rt = IJSRuntime::current_or_get();
-        let ctx = rt.create_context(InstallyApp::new(product));
+        let ctx = rt.create_context(&app);
         
         let _: () = ctx.eval_raw(r#"
         log('Installed OS: ' + System.Os.Name);

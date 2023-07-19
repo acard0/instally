@@ -29,8 +29,7 @@ impl Workload for InstallerWrapper {
         global.if_exist(|s| Ok(s.invoke_before_installition()))?;
 
         self.app.set_workload_state(InstallerWorkloadState::FetchingRemoteTree(self.app.get_product().name.clone()));     
-        let repository = self.app.fetch_repository().await
-            .map_err(|err| WorkloadError::Other(err.to_string()))?;
+        let repository = self.app.get_repository();
 
         std::fs::create_dir_all(&self.app.get_product().target_directory)
             .map_err(|err| WorkloadError::Other(err.to_string()))?;

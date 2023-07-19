@@ -69,18 +69,16 @@ impl Product{
         Ok(Some(format!("{}packages/{}", self.repository, package.script)))
     }
 
-    pub async fn get_uri_to_global_script(&self) -> Result<Option<String>, ScriptError> {
+    pub fn get_uri_to_global_script(&self, repository: &Repository) -> Option<String> {
         // product struct also contains script field but if for some unknown reason
         // script file name at cloud gets changed it can cause issue as product struct is embeeded
         // product field has to contain script name field because it will be used at binary generation
-        let repo = self.fetch_repository().await
-            .map_err(|err| ScriptError::Other(format!("Attemptted to get script global script meta but {err:?}")))?;
 
-        if repo.script.is_empty() {
-            return Ok(None)
+        if repository.script.is_empty() {
+            return None
         }
         
-        Ok(Some(format!("{}{}", self.repository, repo.script)))
+        Some(format!("{}{}", self.repository, repository.script))
     }
 
     pub fn get_path_to_self_struct_target(&self) -> std::path::PathBuf {
@@ -212,7 +210,7 @@ pub struct Script {
 impl Script {
     pub fn new(src: String, app: &InstallyApp) -> Result<Script, IJSError> {
         let rt = IJSRuntime::current_or_get();
-        let ctx = rt.create_context(app.clone());
+        let ctx = rt.create_context(&app);
         ctx.mount(&src)?;
         Ok(Script { ctx })
     }

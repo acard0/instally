@@ -26,7 +26,7 @@ impl Workload for UninstallerWrapper {
         let global = self.app.get_global_script().await?;
         global.if_exist(|s| Ok(s.invoke_before_uninstallition()))?;
 
-        let repository = self.app.get_product().fetch_repository().await?;
+        let repository = self.app.get_repository();
         let summary_cell = RefCell::new(self.app.get_installition_summary_target()
             .map_err(|err| WorkloadError::Other(err.to_string()))?
         );  

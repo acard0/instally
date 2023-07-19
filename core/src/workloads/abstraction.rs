@@ -152,16 +152,21 @@ impl Default for AppContext
 #[derive(Clone, Debug)]
 pub struct InstallyApp {
     product: Product,
+    repository: Repository,
     context: Arc<Mutex<AppContext>>,
 }
 
 impl InstallyApp
 {
-    pub fn new(prdct: Product) -> Self {
-        InstallyApp {
+    pub async fn build(prdct: &Product) -> Result<Self, RepositoryFetchError> {
+        Ok(InstallyApp {
             context: Arc::new(Mutex::new(AppContext::default())),
-            product: prdct, 
-        }
+            product: prdct.clone(), 
+            repository: match prdct.fetch_repository().await {
+                Ok(it) => it,
+                Err(err) => return Err(err),
+            },
+        })
     }
 
     pub fn get_context(&self) -> Arc<Mutex<AppContext>> {
@@ -170,6 +175,10 @@ impl InstallyApp
 
     pub fn get_product(&self) -> &Product {
         &self.product
+    }
+
+    pub fn get_repository(&self) -> &Repository {
+        &self.repository
     }
 
     pub fn set_workload_state<S: Display>(&self, n_state: S) {
@@ -203,7 +212,7 @@ impl InstallyApp
     }
 
     pub async fn get_global_script(&self) -> Result<Option<Script>, ScriptError> {
-        self.get_script(self.product.get_uri_to_global_script().await?).await
+        self.get_script(self.product.get_uri_to_global_script(self.get_repository())).await
     }
 
     pub async fn get_script(&self, uri: Option<String>) -> Result<Option<Script>, ScriptError> {
@@ -274,16 +283,6 @@ impl InstallyApp
         Box::new(move |progress: f32| {
             arc.lock().update_field(AppContextField::state_progress(progress));
         })
-    }
-}
-
-impl Default for InstallyApp
-{
-    fn default() -> Self {
-        InstallyApp { 
-            context: Arc::new(Mutex::new(AppContext::default())),
-            product: Product::default()
-        }
     }
 }
 

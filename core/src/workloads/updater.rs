@@ -30,8 +30,7 @@ impl Workload for UpdaterWrapper {
         let summary = self.app.get_installition_summary_target()
             .map_err(|err| WorkloadError::Other(err.to_string()))?;
     
-        let repository = self.app.fetch_repository().await
-            .map_err(|err| WorkloadError::Other(err.to_string()))?;
+        let repository = self.app.get_repository();
 
         let state = summary.cross_check(&repository.packages)
             .map_err(|err| WorkloadError::Other(err.to_string()))?;

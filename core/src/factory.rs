@@ -1,5 +1,5 @@
 
-use crate::workloads::{installer::{InstallerOptions, InstallerWrapper, InstallerWorkloadState}, uninstaller::{UninstallerOptions, UninstallerWrapper, UninstallerWorkloadState}, abstraction::{InstallyApp, Workload, WorkloadResult}, updater::{UpdaterWrapper, UpdaterWorkloadState, UpdaterOptions}, definitions::Product};
+use crate::{workloads::{installer::{InstallerOptions, InstallerWrapper, InstallerWorkloadState}, uninstaller::{UninstallerOptions, UninstallerWrapper, UninstallerWorkloadState}, abstraction::{InstallyApp, Workload, WorkloadResult}, updater::{UpdaterWrapper, UpdaterWorkloadState, UpdaterOptions}, definitions::Product}, extensions::future::FutureSyncExt};
 
 pub enum WorkloadType {
     Installer(InstallerOptions),
@@ -31,16 +31,17 @@ pub fn run_tokio(product_meta: &Product, settings: WorkloadType) -> RuntimeExecu
 }
 
 pub fn run(product_meta: &Product, settings: WorkloadType) -> Executor {
-    let app = InstallyApp::new(product_meta.clone());
+    let app = InstallyApp::build(&product_meta)
+        .wait().unwrap();
 
     if let Ok(_) = tokio::runtime::Handle::try_current() {
-        return Executor { handle: run_inner(app.clone(), settings), app };
+        return Executor { handle: run_inner(&app, settings), app };
     }
  
     panic!("No running tokio runtime found.")
 }
 
-fn run_inner(app: InstallyApp, settings: WorkloadType) -> tokio::task::JoinHandle<WorkloadResult> {
+fn run_inner(app: &InstallyApp, settings: WorkloadType) -> tokio::task::JoinHandle<WorkloadResult> {
     let join = match settings {
         WorkloadType::Installer(r) => {
             log::info!("Spawning installer workload thread");
