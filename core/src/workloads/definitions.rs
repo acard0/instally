@@ -264,19 +264,35 @@ impl PackageScriptOptional for Option<Script> {
 }
 
 impl DependencyFile {
-    pub fn execute(self, arguments: Vec<String>, attached: bool) {
+    pub fn execute(self, arguments: Vec<String>, attached: bool) -> std::io::Result<()> {
         let (_, path) = self.handle.keep().unwrap();
 
         let mut cmd = Command::new(format!("{}", path.to_str().unwrap()));
         cmd.args(arguments);
 
-        let handle = cmd.spawn().unwrap();
+        let handle = match cmd.spawn() {
+            Ok(handle) => handle,
+            Err(err) => {
+                log::trace!("Command {:?} failed with error {:?}", cmd, err);
+                return Err(err)
+            }
+        };
 
         if attached {
-            handle.wait_with_output().unwrap();
+            match handle.wait_with_output() {
+                Ok(output) => {
+                    if !output.status.success() {
+                        log::trace!("Command {:?} failed with error {:?}", cmd, output);
+                    }
+                }
+                Err(err) => {
+                    log::trace!("Command {:?} failed with error {:?}", cmd, err);
+                    return Err(err)
+                }
+            }
         }
 
-        std::fs::remove_file(path).unwrap();
+        std::fs::remove_file(path)
     }
 }
 

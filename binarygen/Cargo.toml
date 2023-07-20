@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 instally-core = { path = "../core" }
-serde = { version = "1.0.164", features = ["derive"] }
+serde = { version = "1.0.173", features = ["derive"] }
 quick-xml = { version = "0.29.0", features = ["serialize"] }
 patternscan = "1.2.0"
-clap = { version = "4.3.16", features = ["derive"] }
+clap = { version = "4.3.17", features = ["derive"] }

@@ -250,11 +250,15 @@ mod tests {
             log('Installed OS: ' + System.Os.Name);
 
             if (System.Os.Name === "windows") {
-                var webview2_uri = 'https://msedge.sf.dl.delivery.mp.microsoft.com/filestreamingservice/files/6e5c75e2-3d95-4b41-abcb-dc6cef509a32/MicrosoftEdgeWebView2RuntimeInstallerX64.exe';
-                var dotnet_uri = 'https://download.visualstudio.microsoft.com/download/pr/1146f414-17c7-4184-8b10-1addfa5315e4/39db5573efb029130add485566320d74/windowsdesktop-runtime-6.0.20-win-x64.exe';
+                const webview2_uri = 'https://msedge.sf.dl.delivery.mp.microsoft.com/filestreamingservice/files/6e5c75e2-3d95-4b41-abcb-dc6cef509a32/MicrosoftEdgeWebView2RuntimeInstallerX64.exe';
+                const dotnet_desktop_runtime = 'https://download.visualstudio.microsoft.com/download/pr/1146f414-17c7-4184-8b10-1addfa5315e4/39db5573efb029130add485566320d74/windowsdesktop-runtime-6.0.20-win-x64.exe';
+                const dotnet_aspnetcore_runtime = "https://download.visualstudio.microsoft.com/download/pr/be9f67fd-60af-45b1-9bca-a7bcc0e86e7e/6a750f7d7432937b3999bb4c5325062a/aspnetcore-runtime-6.0.20-win-x64.exe";
+        
+                const reAspNet = /Microsoft\.AspNetCore\.App 6\./g;
+                const reNetCore = /Microsoft\.NETCore\.App 6\./g;
+                const reWindowsDesktop = /Microsoft\.WindowsDesktop\.App 6\./g;
 
-                log('Detected os is Windows. Checking WebView2 installation.');
-
+                log('Detected os is Windows. Checking WebView2 installation.');     
                 try 
                 {
                     log("Checking WebView2 version");
@@ -263,16 +267,34 @@ mod tests {
                     log(`WebView2 version: ${pv}`);
                 } catch (err) {
                     log('WebView2 is not installed. Installing...');
-                    Installer.get_and_execute(webview2_uri, [ "/silent", "/install" ], Installer.translate("states.installing", ["WebView2"]));
+                    Installer.get_and_execute(webview2_uri, [ "/silent", "/install" ], Installer.translate("states.installing", ["Microsoft WebView2"]));
                 }
                 log('WebView2 is installed.');
-
+        
                 log('Checking .NET 6 installation.');
-                if (!Installer.try_command('dotnet', ['--list-runtimes'], true)) {
-                    log('.NET 6 is not installed. Installing...');
-                    Installer.get_and_execute(dotnet_uri, [ "/install", "/quiet", "/norestart" ], Installer.translate("states.installing", [".NET 6"]));
+                var dotnet_query = "";
+                try {
+                    dotnet_query = Installer.command_attached('dotnet', ['--list-runtimes'])
+                } catch (err) { } 
+                
+                print(`dotnet query: ${dotnet_query}`);
+                var netCore = reNetCore.test(dotnet_query);
+                var aspNet = reAspNet.test(dotnet_query);
+                var windowsDesktop = reWindowsDesktop.test(dotnet_query);
+
+                if (!netCore || !windowsDesktop) {
+                    print(".NET Desktop Runtime 6.* is not installed. Installing...");
+                    Installer.get_and_execute(dotnet_desktop_runtime, [ "/install", "/quiet", "/norestart" ], Installer.translate("states.installing", ["Microsoft .NET 6 Desktop Runtime"]));
+                } else {
+                    log('.NET Desktop Runtime 6.* is installed.');
+                } 
+                
+                if (!aspNet) {
+                    print(".NET AspNetCore Runtime 6.* it not installed. Installing...");
+                    Installer.get_and_execute(dotnet_aspnetcore_runtime, [ "/install", "/quiet", "/norestart" ], Installer.translate("states.installing", ["Microsoft .NET 6 AspNetCore Runtime"]));
+                } else {
+                    log('.NET AspNetCore Runtime 6.* is installed.');
                 }
-                log('.NET 6 is installed.');
             }
         "#).unwrap();
 

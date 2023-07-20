@@ -4,7 +4,7 @@ use async_trait::async_trait;
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
 
-use crate::{http::client::{self, HttpStreamError}, archiving, target::error::{SymlinkError, AppEntryError}};
+use crate::{http::client::{self, HttpStreamError}, archiving, target::error::{SymlinkError, AppEntryError}, helpers::tmp};
 
 use super::{definitions::*, error::*};
 
@@ -202,7 +202,8 @@ impl InstallyApp
 
     pub async fn get_package(&self, package: &Package) -> Result<PackageFile, PackageDownloadError>{
         let product = &self.product;
-        let mut file = tempfile::NamedTempFile::new()?;
+
+        let mut file = tmp::create_tmp_file()?;
         let _ = self.get_file(&product.get_uri_to_package(&package), file.as_file_mut()).await?;
         Ok(PackageFile { handle: file, package: package.clone() })
     }
@@ -219,9 +220,7 @@ impl InstallyApp
         match uri {
             None => Ok(None),
             Some(uri) => {
-                let mut file = tempfile::NamedTempFile::new()?;
-                let _ = self.get_file(&uri, file.as_file_mut()).await?;
-                let src = std::fs::read_to_string(file.path())?;
+                let src = self.get_text(&uri).await?;
                 Ok(Some(Script::new(src, self)?))
             }
         } 
@@ -230,7 +229,7 @@ impl InstallyApp
     pub async fn get_dependency(&self, uri: &str, state_text: &str) -> Result<DependencyFile, PackageDownloadError>{
         self.set_workload_state(state_text);
 
-        let mut file = tempfile::NamedTempFile::new()?;
+        let mut file = tmp::create_tmp_file()?;
         let _ = self.get_file(uri, file.as_file_mut()).await?;
         Ok(DependencyFile { handle: file })
     }

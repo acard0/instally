@@ -43,7 +43,7 @@ pub mod js_app {
             let _ = self.traverse_app().symlink_file(original, link_dir, &link_name);
         }
 
-        pub fn get_and_execute(&self, url: String, arguments: rquickjs::Array<'_>, state_text: String) -> rquickjs::Result<()> { 
+        pub fn get_and_execute(&self, url: String, arguments: rquickjs::Array<'_>, state_text: String) -> rquickjs::Result<bool> { 
             let arguments = arguments.iter::<String>()
                 .map(|f| format!("{}", f.unwrap()))
                 .collect::<Vec<String>>();
@@ -52,10 +52,16 @@ pub mod js_app {
             let dependency_result = app.get_dependency(&url, &state_text).wait();
 
             if let Ok(dependency) = dependency_result {
-                dependency.execute(arguments, true);
+                match dependency.execute(arguments, true) {
+                    Ok(_) => return Ok(true),
+                    Err(err) => {
+                        log::trace!("Failed to execute dependency {}", err);
+                        return Ok(false);
+                    }
+                }
             }
 
-            Ok(())
+            Ok(true)
         }
 
         pub fn read_reg(&self, key: String, name: String) -> rquickjs::Result<String> {
@@ -81,30 +87,26 @@ pub mod js_app {
                 format!("Failed to delete global config {}", err)
             ))
         }
+        
+        pub fn command_attached(&self, command: String, arguments: rquickjs::Array<'_>) -> rquickjs::Result<String> {
+            let mut cmd = self.create_command(command, arguments);
+
+            cmd.output()
+            .map_err(|err| rquickjs::Error::new_from_js_message(
+                "Command",
+                "String",
+                format!("Failed to execute command {}", err)
+            ))
+            .and_then(|output| {
+                let stdout = String::from_utf8(output.stdout).unwrap_or("".to_owned());
+                log::trace!("Command {:?} executed with output {:?}", cmd, stdout);
+                Ok(stdout)
+            })
+        }
 
         pub fn try_command(&self, command: String, arguments: rquickjs::Array<'_>, attached: bool) -> rquickjs::Result<bool> {
-            let arguments = arguments.iter::<String>()
-                .map(|f| format!("{}", f.unwrap()))
-                .collect::<Vec<String>>();
-
-            let mut cmd = std::process::Command::new(command);
-            cmd.args(arguments);
-    
-            let handle = cmd.spawn().unwrap();
-            if attached {
-                handle.wait_with_output().unwrap();
-            }
-
-            match cmd.status() {
-                Ok(status) => {
-                    log::trace!("Command {:?} executed with status {}", cmd, status);
-                    Ok(status.success())
-                },
-                Err(err) => {
-                    log::trace!("Command {:?} failed with error {:?}", cmd, err);
-                    Ok(false)
-                }
-            }        
+            let mut cmd = self.create_command(command, arguments);
+            Ok(cmd.output().is_ok())
         }
 
         pub fn translate(&self, key: String) -> rquickjs::Result<String> {
@@ -143,6 +145,17 @@ pub mod js_app {
         fn traverse_app(&self) -> InstallyApp {
             let app = unsafe { &mut *(self.app_raw_ptr as *mut InstallyApp) };
             app.clone()
+        }
+
+        #[quickjs(skip)]
+        fn create_command(&self, command: String, arguments: rquickjs::Array<'_>) -> std::process::Command {
+            let arguments = arguments.iter::<String>()
+                .map(|f| format!("{}", f.unwrap()))
+                .collect::<Vec<String>>();
+
+            let mut cmd = std::process::Command::new(command);
+            cmd.args(arguments);
+            cmd
         }
 
         #[quickjs(skip)]

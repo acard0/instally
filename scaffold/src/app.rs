@@ -11,7 +11,6 @@ pub struct AppWrapper {
 
 impl AppWrapper {
     pub fn new(app: InstallyApp) -> AppWrapper {
-
         AppWrapper { app }
     }
 }
