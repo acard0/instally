@@ -4,7 +4,10 @@ use std::io;
 #[derive(thiserror::Error, Debug)]
 pub enum AppEntryError {
     #[error("{0}")]
-    OsError(#[from] OsError)
+    OsError(#[from] OsError),
+
+    #[error("{0}")]
+    IoError(#[from] io::Error)
 }
 
 #[derive(thiserror::Error, Debug)]

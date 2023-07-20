@@ -1,16 +1,12 @@
+use chrono::Datelike;
 use windows::Win32::Foundation::WIN32_ERROR;
 use windows::Win32::System::Com::CLSCTX_INPROC_SERVER;
 use windows::Win32::System::Com::CoCreateInstance;
 use windows::Win32::System::Com::CoInitialize;
 use windows::Win32::System::Com::IPersistFile;
-use windows::Win32::System::Registry::HKEY;
 use windows::Win32::System::Registry::HKEY_CURRENT_USER;
 use windows::Win32::System::Registry::HKEY_LOCAL_MACHINE;
-use windows::Win32::System::Registry::REG_SZ;
-use windows::Win32::System::Registry::RegCloseKey;
-use windows::Win32::System::Registry::RegCreateKeyA;
 use windows::Win32::System::Registry::RegDeleteKeyA;
-use windows::Win32::System::Registry::RegSetValueExA;
 use windows::Win32::UI::Shell::IShellLinkA;
 use windows::core::BSTR;
 use windows::core::ComInterface;
@@ -21,6 +17,7 @@ use winreg::RegKey;
 use std::path::Path;
 
 use crate::helpers::like::CStringLike;
+use crate::workloads::abstraction::InstallyApp;
 use crate::workloads::definitions::Product;
 
 use super::GlobalConfig;
@@ -52,24 +49,34 @@ pub fn break_symlink_file<P: AsRef<Path>>(link_dir: P, link_name: &str) -> std::
     std::fs::remove_file(link_dir.as_ref().join(format!("{}.lnk", link_name)))
 }
 
-pub fn create_app_entry(app: &Product, maintenance_tool_name: &str) -> Result<(), AppEntryError> {
-    let maintenance_tool_path = Path::join(Path::new(&app.target_directory), format!("{}.exe", maintenance_tool_name));
+pub fn create_app_entry(app: &InstallyApp, maintenance_tool_name: &str) -> Result<(), AppEntryError> {
+    let maintenance_tool_path = Path::join(Path::new(&app.get_product().target_directory), format!("{}.exe", maintenance_tool_name));
 
-    unsafe {
-        let mut hkey = HKEY::default();  
-        OsError::into_result(RegCreateKeyA(HKEY_CURRENT_USER, PCSTR::from_raw(format!("Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{}", app.name).as_ptr_nul()),&mut hkey as *mut _))?;
-        OsError::into_result(RegSetValueExA(hkey, PCSTR::from_raw("DisplayName".as_ptr_nul()), 0, REG_SZ, Some(app.name.as_bytes())))?;
-        OsError::into_result(RegSetValueExA(hkey, PCSTR::from_raw("InstallLocation".as_ptr_nul()), 0, REG_SZ,Some(app.target_directory.as_bytes())))?;
-        OsError::into_result(RegSetValueExA(hkey, PCSTR::from_raw("UninstallString".as_ptr_nul()), 0, REG_SZ, Some(format!(r#"{} /uninstall"#, maintenance_tool_path.to_str().unwrap()).as_bytes())))?;
-        OsError::into_result(RegCloseKey(hkey))?;
-    }
+    let hkey = RegKey::predef(HKEY_CURRENT_USER.0);
+    let path = Path::new("Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\").join(&app.get_product().name);
+    let (key, disp) = hkey.create_subkey(path).unwrap();
 
+    let date = chrono::Local::now();
+    let formatted_date = format!("{:02}.{:02}.{:02}", date.year() % 100, date.month(), date.day());
+
+    key.set_value("DisplayName", &app.get_product().name)?;
+    key.set_value("Comments", &app.get_product().name)?;
+    key.set_value("EstimatedSize", &((app.get_repository().size / 1000) as u32))?;
+    key.set_value("DisplayVersion", &formatted_date)?;
+    key.set_value("DisplayIcon", &maintenance_tool_path.to_str().unwrap())?;
+    key.set_value("Publisher", &app.get_product().publisher)?;
+    key.set_value("URLInfoAbout", &app.get_product().product_url)?;
+    key.set_value("HelpLink", &app.get_product().product_url)?;
+    key.set_value("URLUpdateInfo", &app.get_product().product_url)?;
+    key.set_value("InstallLocation", &app.get_product().target_directory)?;
+    key.set_value("UninstallString", &format!(r#"{} /uninstall"#, maintenance_tool_path.to_str().unwrap()))?;
+    
     Ok(())
 }
 
-pub fn create_maintenance_tool(app: &Product, maintenance_tool_name: &str) -> std::io::Result<()> {
+pub fn create_maintenance_tool(app: &InstallyApp, maintenance_tool_name: &str) -> std::io::Result<()> {
     let exec_path = std::env::current_exe().unwrap();
-    let copy_path = std::path::Path::new(&app.target_directory).join(format!("{}.exe", maintenance_tool_name));
+    let copy_path = std::path::Path::new(&app.get_product().target_directory).join(format!("{}.exe", maintenance_tool_name));
     _ = std::fs::copy(exec_path, copy_path)?;
     Ok(())
 }
@@ -87,12 +94,17 @@ impl GlobalConfigImpl for GlobalConfig {
     }
 
     fn set(&self, key: String, name: String, value: String) -> Result<(), OsError> {
-        let mut hkey = HKEY::default();
-        unsafe {
-            OsError::into_result(RegCreateKeyA(HKEY_CURRENT_USER, PCSTR::from_raw(key.as_ptr_nul()),&mut hkey as *mut _))?;
-            OsError::into_result(RegSetValueExA(hkey, PCSTR::from_raw(name.as_ptr_nul()), 0, REG_SZ, Some(value.as_bytes())))?;
-        }
-        Ok(())
+        let hklm_str = key.split('\\').collect::<Vec<&str>>();
+        let hkey = match hklm_str[0] {
+            "HKEY_CURRENT_USER" => RegKey::predef(HKEY_CURRENT_USER.0),
+            "HKEY_LOCAL_MACHINE" => RegKey::predef(HKEY_LOCAL_MACHINE.0),
+            _ => return Err(OsError::Other(format!("Unsupported HKEY: {}", hklm_str[0])))
+        };
+
+        let (key, disp) = hkey.create_subkey(&hklm_str[1..].join("\\")).unwrap();
+
+        key.set_value(name, &value)
+            .map_err(|err| OsError::Other(err.to_string()))
     }
 
     fn get(&self, key: String, name: String) -> Result<String, OsError> {
