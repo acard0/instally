@@ -191,15 +191,55 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_js_runtime() {
-        let product = Product {
-            name: "Tutucu".to_owned(),
-            publisher: "liteware".to_owned(),
+    fn test_localization() {
+        let product = Product::from_template(
+            Product {
+                name: "Wulite".to_owned(),
+                publisher: "liteware.io".to_owned(),
+                product_url: "https://liteware.io".to_owned(),
+                target_directory: "@{Directories.User.Home}\\AppData\\Roaming\\@{App.Publisher}\\@{App.Name}".to_owned(),
+                repository: "https://cdn.liteware.xyz/instally/wulite/".to_owned(),
+                script: "global_script.js".to_owned(),
+            }
+        ).unwrap();
+
+        let app = InstallyApp::build(&product)
+            .wait().unwrap();
+
+        let rt = IJSRuntime::current_or_get();
+        let ctx = rt.create_context(&app);    
+        
+        let _: () = ctx.eval_raw(r#"
+
+            print(`hello: ${Installer.translate("messages.hello")}`);
+
+            Installer.add_translation("de", "messages.hello", "Hallo");
+            print(`hello: ${Installer.translate("de", "messages.hello")}`);
+
+            print(`hello: ${Installer.translate("messages.hello.x", ["World"])}`);
+
+            Installer.add_translation("de", "messages.hello.x", "Hallo, {0}");
+            print(`hello: ${Installer.translate("de", "messages.hello.x", ["Jason"])}`);
+
+        "#).unwrap();
+
+        ctx.free();
+        rt.free();
+    }
+    
+    #[test]
+    fn test_dependency_check() {
+        let product = Product::from_template(
+            Product {
+                name: "Wulite".to_owned(),
+                publisher: "liteware.io".to_owned(),
             product_url: "https://liteware.io".to_owned(),
-            target_directory: "C:\\Users\\doquk\\AppData\\Roaming\\liteware.io\\Tutucu".to_owned(),
-            repository: "https://cdn.liteware.xyz/instally/tutucu/release/".to_owned(),
-            script: "".to_owned(),
-        };
+                target_directory: "@{Directories.User.Home}\\AppData\\Roaming\\@{App.Publisher}\\@{App.Name}".to_owned(),
+                repository: "https://cdn.liteware.xyz/instally/wulite/".to_owned(),
+                script: "global_script.js".to_owned(),
+            }
+        ).unwrap();
+
         let app = InstallyApp::build(&product)
             .wait().unwrap();
 
@@ -223,14 +263,14 @@ mod tests {
                     log(`WebView2 version: ${pv}`);
                 } catch (err) {
                     log('WebView2 is not installed. Installing...');
-                    Installer.get_and_execute(webview2_uri, [ "/silent", "/install" ], 'Installing WebView2');
+                    Installer.get_and_execute(webview2_uri, [ "/silent", "/install" ], Installer.translate("states.installing", ["WebView2"]));
                 }
                 log('WebView2 is installed.');
 
                 log('Checking .NET 6 installation.');
                 if (!Installer.try_command('dotnet', ['--list-runtimes'], true)) {
                     log('.NET 6 is not installed. Installing...');
-                    Installer.get_and_execute(dotnet_uri, [ "/install", "/quiet", "/norestart" ], 'Installing .NET 6')
+                    Installer.get_and_execute(dotnet_uri, [ "/install", "/quiet", "/norestart" ], Installer.translate("states.installing", [".NET 6"]));
                 }
                 log('.NET 6 is installed.');
             }
