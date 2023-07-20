@@ -1,5 +1,5 @@
 
-use std::path::Path;
+use std::{path::Path, fs};
 
 use clap::{arg, Parser};
 use instally_core::{workloads::definitions::{Package, Repository, Product, PackageDefinition}, archiving, helpers::serializer};
@@ -30,7 +30,7 @@ fn main() {
     let product_path = config_dir.join("product.xml");
 
     let product = Product::read_file(product_path).unwrap();
-    let mut repository = Repository::new(&product.name);
+    let mut repository = Repository::new(&product.name, 0);
 
     let repository_packages_dir = target_dir.join("packages");
     std::fs::create_dir_all(repository_packages_dir.clone()).unwrap();
@@ -44,27 +44,30 @@ fn main() {
         let package_dir = package_folder.path();
         let data_dir = package_dir.join("data");
         let meta_dir = package_dir.join("meta");
-
-        
+   
         let package_xml_path = meta_dir.join("package.xml");
         let package_definition = PackageDefinition::from_file(&package_xml_path).unwrap();
 
         let archive_name = format!("{}.zip", package_definition.name);
-        let sha1 = "".to_owned(); // todo: calculate sha1
-        let script = package_definition.script.clone();
-        let package = Package::from_definition(&package_definition, &archive_name, &sha1, &script);
-        repository.packages.push(package.clone());
-
+        let archive_path = repository_packages_dir.join(archive_name.clone());
         archiving::zip_write::compress_dir(
             &data_dir,
-            &repository_packages_dir.join(archive_name),
+            &archive_path,
             zip::CompressionMethod::Bzip2
         ).unwrap();
+
+        let sha1 = "".to_owned(); // todo: calculate sha1
+        let script = package_definition.script.clone();
+        let size = fs::metadata(&archive_path).unwrap().len();
+        let package = Package::from_definition(&package_definition, &archive_name, size, &sha1, &script);
+        repository.packages.push(package.clone());
 
         if !package.script.is_empty() {
             let package_script_path = meta_dir.join(package.script.clone());
             std::fs::copy(package_script_path, repository_packages_dir.join(package.script)).unwrap();
         }
+
+        repository.size += size;
     }
 
     if !product.script.is_empty() {

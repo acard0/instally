@@ -1,4 +1,4 @@
-use std::{ops::{Deref, DerefMut}, io::{Read, Write}, path::{PathBuf, Path}, process::Command};
+use std::{ops::{Deref, DerefMut}, io::{Read, Write}, path::{PathBuf, Path}, process::Command, collections::HashMap, sync::Arc};
 
 use crate::{http::client, helpers::{versioning::version_compare, formatter::TemplateFormat, serializer}, scripting::{builder::{IJSContext, IJSRuntime}, error::IJSError}};
 
@@ -117,14 +117,16 @@ pub struct Repository {
     pub application_name: String,
     pub script: String,
     pub packages: Vec<Package>,
+    pub size: u64
 }
 
 impl Repository {
-    pub fn new(application_name: &str) -> Self {
+    pub fn new(application_name: &str, size: u64) -> Self {
         Self {
             application_name: application_name.to_string(),
             script: String::new(),
             packages: Vec::new(),
+            size
         }
     }
 
@@ -157,8 +159,8 @@ impl PackageDefinition {
         Ok(serializer::from_file(path)?)
     }
 
-    pub fn define(&self, archive: &str, sha1: &str, script: &str) -> Package {
-        Package::from_definition(self, archive, sha1, script)
+    pub fn define(&self, archive: &str, size: u64, sha1: &str, script: &str) -> Package {
+        Package::from_definition(self, archive, size, sha1, script)
     }
 }
 
@@ -171,6 +173,7 @@ pub struct Package {
     pub release_date: String,
     pub default: bool,
     pub archive: String,
+    pub size: u64,
     pub sha1: String,
     pub script: String
 }
@@ -180,7 +183,7 @@ impl Package {
         Ok(serializer::from_file(path)?)
     }
 
-    pub fn from_definition(definition: &PackageDefinition, archive: &str, sha1: &str, script: &str) -> Package {
+    pub fn from_definition(definition: &PackageDefinition, archive: &str, size: u64, sha1: &str, script: &str) -> Package {
         Package {
             name: definition.name.clone(),
             display_name: definition.display_name.clone(),
@@ -189,7 +192,8 @@ impl Package {
             default: definition.default,
             archive: archive.to_owned(),
             sha1: sha1.to_owned(),
-            script: script.to_owned()
+            script: script.to_owned(),
+            size
         }
     }
 }
