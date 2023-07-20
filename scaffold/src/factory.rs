@@ -25,6 +25,7 @@ pub fn spawn_ui(ctx: InstallyApp) {
         transparent: true,
         min_window_size: Some(egui::vec2(450.0, 150.0)),
         initial_window_size: Some(egui::vec2(450.0, 150.0)),
+        centered: true,
         ..Default::default()
     };
 
