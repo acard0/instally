@@ -5,6 +5,7 @@ use crate::{http::client, helpers::{versioning::version_compare, formatter::Temp
 use super::{abstraction::InstallyApp, error::{WeakStructParseError, PackageUninstallError, RepositoryCrossCheckError, RepositoryFetchError, ScriptError}};
 
 use directories::UserDirs;
+use rust_i18n::Backend;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
@@ -466,3 +467,59 @@ pub struct CrossCheckSummary {
     pub updates: Vec<PackagePair>,
     pub not_installed: Vec<Package>
 }
+
+#[derive(Debug, Clone)]
+pub struct I18n {
+    inner: I18nHolder,
+}
+
+impl Deref for I18n {
+    type Target = I18nHolder;
+
+    fn deref(&self) -> &Self::Target {
+        &self.inner
+    }
+}
+
+impl I18n {
+    pub fn new() -> Self {
+        Self { inner: I18nHolder::new() }
+    }
+
+    pub fn get(&self, key: &str) -> String {
+        self.translate(&rust_i18n::locale(), key)
+            .unwrap_or(key.to_owned())
+    }
+}
+
+impl rust_i18n::Backend for I18n {
+    fn available_locales(&self) -> Vec<String> {
+        self.trs.lock().keys().cloned().collect()
+    }
+
+    fn translate(&self, locale: &str, key: &str) -> Option<String> {
+        return self.trs.lock().get(locale)?.get(key).cloned();
+    }
+
+    fn add(&mut self, locale: &str, key: &str, value: &str) {
+        let mut trs = self.trs.lock();
+        let locale = trs.entry(locale.to_string())
+            .or_insert_with(HashMap::new);
+
+        locale.insert(key.to_string(), value.to_string());
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct I18nHolder {
+    trs: Arc<parking_lot::Mutex<HashMap<String, HashMap<String, String>>>>,
+}
+
+impl I18nHolder {
+    pub fn new() -> Self {
+        Self { 
+            trs: Arc::new(parking_lot::Mutex::new(HashMap::new()))
+        }
+    }
+}
+    

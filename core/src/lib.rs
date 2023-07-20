@@ -14,3 +14,6 @@ pub(crate) mod target;
 pub use target::windows as sys;
 #[cfg(not(target_os = "windows"))]
 pub use target::unix as sys;
+
+pub use rust_i18n::*;
+rust_i18n::i18n!("locales", fallback = "en", backend = workloads::definitions::I18n::new());

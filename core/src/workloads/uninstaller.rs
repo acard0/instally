@@ -2,7 +2,7 @@ use std::{fmt::{Formatter, Display}, cell::RefCell};
 
 use async_trait::async_trait;
 
-use crate::{workloads::definitions::PackageScriptOptional, extensions::future::FutureSyncExt};
+use crate::{workloads::definitions::PackageScriptOptional, extensions::future::FutureSyncExt, *};
 
 use super::{definitions::*, error::*, abstraction::*};
 
@@ -106,14 +106,14 @@ impl Display for UninstallerWorkloadState {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             UninstallerWorkloadState::DeletingFiles => {
-                write!(f, "Deleting files")
+                write!(f, "{}", t!("states.deleting-files"))
             },
 
-            UninstallerWorkloadState::Interrupted(err) => {
-                write!(f, "Interrupted due to an error. {}", err)
+            UninstallerWorkloadState::Interrupted(e) => {
+                write!(f, "{:?}", t!("states.interrupted.by-error", [e]))
             },
 
-            _ => write!(f, "Done")
+            _ => write!(f, "{:?}", t!("states.completed"))
         }
     }
 }

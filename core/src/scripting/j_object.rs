@@ -4,7 +4,7 @@ use rquickjs::{FromJs, Ctx, Value};
 #[rquickjs::bind(object, public)]
 #[quickjs(bare)]
 pub mod js_app {
-    use crate::{workloads::abstraction::InstallyApp, extensions::future::FutureSyncExt, target::{GlobalConfig, GlobalConfigImpl}};
+    use crate::{workloads::abstraction::InstallyApp, extensions::future::FutureSyncExt, target::{GlobalConfig, GlobalConfigImpl}, *};
 
     pub struct InstallerJ {
         #[quickjs(readonly)]
@@ -105,6 +105,30 @@ pub mod js_app {
                     Ok(false)
                 }
             }        
+        }
+
+        pub fn translate(&self, key: String) -> rquickjs::Result<String> {
+            Ok(t!(&key))
+        }
+
+        #[quickjs(rename = "translate")]
+        pub fn translate_with_args(&self, key: String, arguments: rquickjs::Array<'_>) -> rquickjs::Result<String> {
+            Ok(t!(&key, arguments.iter::<String>().map(|f| f.unwrap()).collect::<Vec<String>>()))
+        }
+
+        #[quickjs(rename = "translate")]
+        pub fn translate_from_locale(&self, locale: String, key: String) -> rquickjs::Result<String> {
+            Ok(t!(&key, locale = &locale, [""]))
+        }    
+
+        #[quickjs(rename = "translate")]
+        pub fn translate_from_locale_with_args(&self, locale: String, key: String, arguments: rquickjs::Array<'_>) -> rquickjs::Result<String> {
+            Ok(t!(&key, locale = &locale, arguments.iter::<String>().map(|f| f.unwrap()).collect::<Vec<String>>()))
+        } 
+
+        pub fn add_translation(&self, locale: String, key: String, value: String) -> rquickjs::Result<()> {
+            t_add!(&locale, &key, &value);
+            Ok(())
         }
 
         // Event definitions

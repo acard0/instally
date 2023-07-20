@@ -1,0 +1,30 @@
+messages.hello: Hello
+messages.hello.x: Hello {0}
+
+states.fetching-repository: "Fetching repository: '{0}'"
+
+states.downloading: "Downloading: '{0}'"
+states.decompressing: "Decompressing: '{0}'"
+states.installing: "Installing: '{0}'"
+states.compressing: "Compressing: '{0}'"
+states.deleting-files: "Deleting files"
+
+states.interrupted.by-error: "Interrupted by error: '{0}'"
+states.interrupted.by-user: "Interrupted by user"
+
+states.completed: "Completed"
+
+### words
+abort: Abort
+ok: OK
+cancel: Cancel
+yes: Yes
+no: No
+retry: Retry
+ignore: Ignore
+skip: Skip
+next: Next
+back: Back
+finish: Finish
+close: Close
+open: Open

@@ -233,7 +233,7 @@ mod tests {
             Product {
                 name: "Wulite".to_owned(),
                 publisher: "liteware.io".to_owned(),
-            product_url: "https://liteware.io".to_owned(),
+                product_url: "https://liteware.io".to_owned(),
                 target_directory: "@{Directories.User.Home}\\AppData\\Roaming\\@{App.Publisher}\\@{App.Name}".to_owned(),
                 repository: "https://cdn.liteware.xyz/instally/wulite/".to_owned(),
                 script: "global_script.js".to_owned(),
@@ -247,7 +247,7 @@ mod tests {
         let ctx = rt.create_context(&app);
         
         let _: () = ctx.eval_raw(r#"
-        log('Installed OS: ' + System.Os.Name);
+            log('Installed OS: ' + System.Os.Name);
 
             if (System.Os.Name === "windows") {
                 var webview2_uri = 'https://msedge.sf.dl.delivery.mp.microsoft.com/filestreamingservice/files/6e5c75e2-3d95-4b41-abcb-dc6cef509a32/MicrosoftEdgeWebView2RuntimeInstallerX64.exe';

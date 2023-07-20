@@ -5,6 +5,7 @@ use super::{definitions::*, error::*, abstraction::*};
 
 use async_trait::async_trait;
 
+use crate::*;
 
 pub type UpdaterWrapper = AppWrapper<UpdaterOptions>;
 
@@ -100,27 +101,27 @@ unsafe impl Sync for UpdaterWorkloadState {}
 impl Display for UpdaterWorkloadState {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            UpdaterWorkloadState::FetchingRemoteTree(str) => {
-                write!(f, "Fetching repository: {:?}", str)
+            UpdaterWorkloadState::FetchingRemoteTree(s) => {
+                write!(f, "{:?}", t!("states.fetching-repository", [s]))
             },
 
-            UpdaterWorkloadState::DownloadingComponent(str) => {
-                write!(f, "Downloading: {:?}", str)
+            UpdaterWorkloadState::DownloadingComponent(s) => {
+                write!(f, "{:?}", t!("states.downloading", [s]))
             }, 
-            UpdaterWorkloadState::InstallingComponent(str) => {
-                write!(f, "Installing: {:?}", str)
+            UpdaterWorkloadState::InstallingComponent(s) => {
+                write!(f, "{:?}", t!("states.installing", [s]))
             },
 
-            UpdaterWorkloadState::Interrupted(str) => {
-                write!(f, "Interrupted due error: {}", str)
+            UpdaterWorkloadState::Interrupted(s) => {
+                write!(f, "{:?}", t!("states.interrupted.by-error", [s]))
             },
             
             UpdaterWorkloadState::Aborted => {
-                write!(f, "Aborted by user request")
+                write!(f, "{:?}", t!("states.interrupted.by-user"))
             },
             
             UpdaterWorkloadState::Done => {
-                write!(f, "Update is completed")
+                write!(f, "{:?}", t!("states.completed"))
             }
         }
     }

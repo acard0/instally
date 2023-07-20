@@ -1,8 +1,9 @@
+
 use std::process;
 
 use eframe::egui;
 use egui::ProgressBar;
-use instally_core::workloads::abstraction::InstallyApp;
+use instally_core::{workloads::abstraction::InstallyApp, *};
 
 pub struct AppWrapper {
     app: InstallyApp,
@@ -34,7 +35,7 @@ impl eframe::App for AppWrapper{
                 let value = match app.is_completed() {
                     true => 0.999,
                     _ => {  // at 1.0 ui stops updating itself, bug
-                        let q = (app.get_progress() / 100.0) + 0.06;
+                        let q = app.get_progress() / 100.0;
                         f32::min(q, 0.999)
                     }
                 };
@@ -56,7 +57,7 @@ impl eframe::App for AppWrapper{
             });
         
             ui.with_layout(egui::Layout::bottom_up(egui::Align::RIGHT), |ui| {
-                if ui.button("Abort").clicked() {
+                if ui.button(t!(if app.is_completed() { "ok" } else { "abort" })).clicked() {
                     process::exit(1);
                 }
             });

@@ -1,0 +1,30 @@
+messages.hello: Merhaba
+messages.hello.x: Merhaba, {0}
+
+states.fetching-repository: "Kaynak bilgisi getiriliyor: '{0}'"
+
+states.downloading: "İndiriliyor: '{0}'"
+states.decompressing: "Arşivden çıkartılıyor: '{0}'"
+states.installing: "Kuruluyor: '{0}'"
+states.compressing: "Arşivleniyor: '{0}'"
+states.deleting-files: "Dosyalar siliniyor"
+
+states.interrupted.by-error: "Hata oluştu: '{0}'"
+states.interrupted.by-user: "İptal edildi"
+
+states.completed: "Tamamlandı"
+
+### words
+abort: İptal
+ok: Tamam
+cancel: İptal
+yes: Evet
+no: Hayır
+retry: Yeniden dene
+ignore: Yoksay
+skip: Atla
+next: İleri
+back: Geri
+finish: Bitir
+close: Kapat
+open: Aç

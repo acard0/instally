@@ -33,11 +33,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 Product {
                     name: "Wulite".to_owned(),
                     publisher: "liteware.io".to_owned(),
-                product_url: "https://liteware.io".to_owned(),
+                    product_url: "https://liteware.io".to_owned(),
                     target_directory: "@{Directories.User.Home}\\AppData\\Roaming\\@{App.Publisher}\\@{App.Name}".to_owned(),
                     repository: "https://cdn.liteware.xyz/instally/wulite/".to_owned(),
                     script: "global_script.js".to_owned(),
-            }
+                }
             ).unwrap()
         }
     };

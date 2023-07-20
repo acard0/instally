@@ -1,7 +1,7 @@
 
 use std::fmt::{Display, Formatter};
 
-use crate::workloads::error::WorkloadError;
+use crate::{workloads::error::WorkloadError, *};
 
 use super::{definitions::*, abstraction::*};
 
@@ -71,11 +71,11 @@ impl Workload for InstallerWrapper {
             })?;
         }
 
-        self.app.create_app_entry(&self.app.get_product(), "maintenancetool")
+        self.app.create_app_entry(&self.app, "maintenancetool")
             .map_err(|err| WorkloadError::Other(format!("Failed to create app entry: {}", err.to_string())))?;
         
         if std::env::var("STANDALONE_EXECUTION").is_ok() {
-            self.app.create_maintenance_tool(&self.app.get_product(), "maintenancetool")?;
+            self.app.create_maintenance_tool(&self.app, "maintenancetool")?;
         }
 
         global.if_exist(|s| Ok(s.invoke_after_installition()))?;
@@ -100,27 +100,27 @@ unsafe impl Sync for InstallerWorkloadState {}
 impl Display for InstallerWorkloadState {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            InstallerWorkloadState::FetchingRemoteTree(str) => {
-                write!(f, "Fetching repository: {:?}", str)
+            InstallerWorkloadState::FetchingRemoteTree(s) => {
+                write!(f, "{:?}", t!("states.fetching-repository", [s]))
             },
 
-            InstallerWorkloadState::DownloadingComponent(str) => {
-                write!(f, "Downloading: {:?}", str)
+            InstallerWorkloadState::DownloadingComponent(s) => {
+                write!(f, "{:?}", t!("states.downloading", [s]))
             }, 
-            InstallerWorkloadState::InstallingComponent(str) => {
-                write!(f, "Installing: {:?}", str)
+            InstallerWorkloadState::InstallingComponent(s) => {
+                write!(f, "{:?}", t!("states.installing", [s]))
             },
 
-            InstallerWorkloadState::Interrupted(str) => {
-                write!(f, "Interrupted due error: {}", str)
+            InstallerWorkloadState::Interrupted(s) => {
+                write!(f, "{:?}", t!("states.interrupted.by-error", [s]))
             },
             
             InstallerWorkloadState::Aborted => {
-                write!(f, "Aborted by user request")
+                write!(f, "{:?}", t!("states.interrupted.by-user"))
             },
             
             InstallerWorkloadState::Done => {
-                write!(f, "Installition is completed")
+                write!(f, "{:?}", t!("states.completed"))
             }
         }
     }
