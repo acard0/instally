@@ -33,7 +33,7 @@ impl Product{
         let formatter = template.create_formatter();
         let back_step = serializer::to_xml(&template).unwrap();
         let xml = formatter.format(&back_step);
-        let product: Product = serializer::from_str(&xml).unwrap();
+        let product: Product = serializer::from_str(&xml)?;
         Ok(product)
     }
 

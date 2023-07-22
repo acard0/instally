@@ -28,3 +28,54 @@ back: Back
 finish: Finish
 close: Close
 open: Open
+
+### errors
+repository-fetch-error:
+  network-error: "Could not retrieve the remote repository due to a network issue."
+  parse-error: "Could not parse repository weak structure."
+
+weak-struct-parse-error:
+  io-error: "Could not load weak structure from file."
+  parse-error: "Could not parse weak structure loaded from file."
+
+package-download-error:
+  network-error: "Could not download the package due to a network issue."
+  io-error: "Unable to save the package due to a storage issue."
+
+script-error:
+  http-stream-error: "A problem occurred during the script download."
+  io-error: "An issue arose while reading the script from a file."
+  ijs-error: "There was trouble running the script."
+  other: "An unspecified error occurred."
+
+package-install-error:
+  io-error: "A problem occurred while reading the package file."
+  archive-error: "An issue arose while unpacking the package file."
+  summary-io-error: "There was trouble accessing the installation summary file."
+
+package-uninstall-error:
+  installation-not-found: "The package for uninstallation is not found."
+  io-error: "An issue occurred while removing files."
+  summary-io-error: "There was trouble accessing the installation summary file."
+
+repository-cross-check-error:
+  failed-to-fetch-remote-tree: "Could not retrieve the remote tree."
+  failed-to-parse-installation-summary: "There was trouble understanding the installation summary."
+
+serialization-error:
+  io: "An IO error occurred."
+  xml: "An XML error occurred."
+
+app-entry-error:
+  os-error: "Failed to modify the application entry due to an OS error."
+  io-error: "Failed to modify the application entry due to an IO error."
+
+symlink-error:
+  os-error: "Failed to create the symlink due to an OS error."
+  io-error: "Failed to create the symlink due to an IO error."
+
+os-error:
+  other: "An unspecified OS error occurred."
+
+ijs-error:
+  other: "An unspecified JavaScript engine error occurred."

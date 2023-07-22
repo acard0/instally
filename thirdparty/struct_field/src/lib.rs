@@ -3,6 +3,32 @@ use proc_macro2::{Ident, Span};
 use quote::{quote, ToTokens};
 use syn::{Attribute, DeriveInput, Fields, Meta, NestedMeta, Type, Visibility};
 
+#[proc_macro_derive(AsError)]
+pub fn derive_this_error(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    let ast = syn::parse_macro_input!(input as DeriveInput);
+
+    let name = &ast.ident;
+
+    let impl_block = quote! {
+        impl From<#name> for Error {
+            fn from(value: #name) -> Self {
+                use convert_case::*;
+
+                let variant = value.as_ref()
+                    .to_case(Case::Kebab);
+
+                let name = stringify!(#name)
+                    .to_case(Case::Kebab);
+
+                let translation = t!(&format!("{}.{}", name, variant));
+                Error::new(ErrorRepr::new(value), &translation) 
+            }
+        }
+    };
+
+    proc_macro::TokenStream::from(impl_block)
+}
+
 #[proc_macro_derive(StructField, attributes(struct_field))]
 pub fn derive_field(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let DeriveInput {

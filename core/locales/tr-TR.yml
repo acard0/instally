@@ -28,3 +28,54 @@ back: Geri
 finish: Bitir
 close: Kapat
 open: Aç
+
+### errors
+repository-fetch-error:
+  network-error: "Ağ sorunu nedeniyle uzak depo alınamadı."
+  parse-error: "Depo zayıf yapısı ayrıştırılamadı."
+
+weak-struct-parse-error:
+  io-error: "Dosyadan zayıf yapı yüklenemedi."
+  parse-error: "Dosyadan yüklenen zayıf yapı ayrıştırılamadı."
+
+package-download-error:
+  network-error: "Paket, bir ağ sorunu nedeniyle indirilemedi."
+  io-error: "Depolama sorunu nedeniyle paket kaydedilemedi."
+
+script-error:
+  http-stream-error: "Script indirilirken bir sorun oluştu."
+  io-error: "Script bir dosyadan okunurken bir sorun oluştu."
+  ijs-error: "Script çalıştırılırken bir sorun oluştu."
+  other: "Belirtilmemiş bir hata oluştu."
+
+package-install-error:
+  io-error: "Paket dosyasını okurken bir sorun oluştu."
+  archive-error: "Paket dosyası açılırken bir sorun oluştu."
+  summary-io-error: "Kurulum özeti dosyasına erişilirken bir sorun oluştu."
+
+package-uninstall-error:
+  installation-not-found: "Kaldırılacak paket bulunamadı."
+  io-error: "Dosyalar kaldırılırken bir sorun oluştu."
+  summary-io-error: "Kurulum özeti dosyasına erişilirken bir sorun oluştu."
+
+repository-cross-check-error:
+  failed-to-fetch-remote-tree: "Uzak ağaç alınamadı."
+  failed-to-parse-installation-summary: "Kurulum özeti anlaşılamadı."
+
+serialization-error:
+  io: "Bir IO hatası oluştu."
+  xml: "Bir XML hatası oluştu."
+
+app-entry-error:
+  os-error: "OS hatası nedeniyle uygulama girişi değiştirilemedi."
+  io-error: "IO hatası nedeniyle uygulama girişi değiştirilemedi."
+
+symlink-error:
+  os-error: "OS hatası nedeniyle sembolik bağlantı oluşturulamadı."
+  io-error: "IO hatası nedeniyle sembolik bağlantı oluşturulamadı."
+
+os-error:
+  other: "Belirtilmemiş bir OS hatası oluştu."
+
+ijs-error:
+  other: "Belirtilmemiş bir JavaScript motoru hatası oluştu."

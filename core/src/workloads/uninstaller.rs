@@ -2,9 +2,9 @@ use std::{fmt::{Formatter, Display}, cell::RefCell};
 
 use async_trait::async_trait;
 
-use crate::{workloads::definitions::PackageScriptOptional, extensions::future::FutureSyncExt, *};
+use crate::{workloads::definitions::PackageScriptOptional, extensions::future::FutureSyncExt, *, error::Error};
 
-use super::{definitions::*, error::*, abstraction::*};
+use super::{definitions::*, abstraction::*};
 
 pub type UninstallerWrapper = AppWrapper<UninstallerOptions>;
 
@@ -21,15 +21,13 @@ impl Default for UninstallerOptions {
 
 #[async_trait] 
 impl Workload for UninstallerWrapper {
-    async fn run(&self) -> Result<(), WorkloadError> {
+    async fn run(&self) -> Result<(), Error> {
 
         let global = self.app.get_global_script().await?;
         global.if_exist(|s| Ok(s.invoke_before_uninstallition()))?;
 
         let repository = self.app.get_repository();
-        let summary_cell = RefCell::new(self.app.get_installition_summary_target()
-            .map_err(|err| WorkloadError::Other(err.to_string()))?
-        );  
+        let summary_cell = RefCell::new(self.app.get_installition_summary_target()?);  
 
         let targets = match &self.settings.target_packages {
             Some(opted) => {
@@ -79,8 +77,7 @@ impl Workload for UninstallerWrapper {
         }
 
         if summary.packages.len() == 0 {
-            crate::sys::delete_app_entry(&self.app.get_product())
-                .map_err(|err| WorkloadError::Other(format!("Failed to delete app entry. Trace: {}", err)))?;
+            crate::sys::delete_app_entry(&self.app.get_product())?;
             
             log::info!("All packages and their files are deleted. App entry is deleted too.");
         }

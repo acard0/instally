@@ -1,7 +1,7 @@
 
 use std::fmt::{Display, Formatter};
 
-use crate::{workloads::error::WorkloadError, *};
+use crate::{*, error::Error};
 
 use super::{definitions::*, abstraction::*};
 
@@ -22,7 +22,7 @@ impl Default for InstallerOptions {
 
 #[async_trait]
 impl Workload for InstallerWrapper {
-    async fn run(&self) -> Result<(), WorkloadError> {
+    async fn run(&self) -> Result<(), Error> {
         log::info!("Starting to install {}", &self.app.get_product().name);
 
         let global = self.app.get_global_script().await?;
@@ -31,12 +31,10 @@ impl Workload for InstallerWrapper {
         self.app.set_workload_state(InstallerWorkloadState::FetchingRemoteTree(self.app.get_product().name.clone()));     
         let repository = self.app.get_repository();
 
-        std::fs::create_dir_all(&self.app.get_product().target_directory)
-            .map_err(|err| WorkloadError::Other(err.to_string()))?;
+        std::fs::create_dir_all(&self.app.get_product().target_directory)?;
 
         // api uses product weak struct, resolves it from filesystem
-        self.app.get_product().dump()
-            .map_err(|e| WorkloadError::Other(e.to_string()))?;
+        self.app.get_product().dump()?;
 
         let targets = match &self.settings.target_packages {
             None => repository.get_default_packages(),
@@ -56,14 +54,12 @@ impl Workload for InstallerWrapper {
             log::info!("Downloading the package file from {}", &self.app.get_product().get_uri_to_package(&package));
             self.app.set_workload_state(InstallerWorkloadState::DownloadingComponent(package.display_name.clone()));
 
-            let package_file = self.app.get_package(&package).await
-                .map_err(|err| WorkloadError::Other(err.to_string()))?;
+            let package_file = self.app.get_package(&package).await?;
 
             log::info!("Decompression of {}", &package.display_name);
             self.app.set_workload_state(InstallerWorkloadState::InstallingComponent(package.display_name.clone()));
 
-            self.app.install_package(&package, &package_file)
-                .map_err(|err| WorkloadError::Other(err.to_string()))?;
+            self.app.install_package(&package, &package_file)?;
 
             script.if_exist(|s| {
                 s.invoke_after_installition();
@@ -71,8 +67,7 @@ impl Workload for InstallerWrapper {
             })?;
         }
 
-        self.app.create_app_entry(&self.app, "maintenancetool")
-            .map_err(|err| WorkloadError::Other(format!("Failed to create app entry: {}", err.to_string())))?;
+        self.app.create_app_entry(&self.app, "maintenancetool")?;
         
         if std::env::var("STANDALONE_EXECUTION").is_ok() {
             self.app.create_maintenance_tool(&self.app, "maintenancetool")?;

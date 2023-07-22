@@ -1,50 +1,36 @@
+
 use crate::{http::client::HttpStreamError, scripting::error::IJSError, helpers::serializer::{SerializationError, self}};
+use crate::{*, error::*};
 
-#[derive(thiserror::Error, Debug)]
-pub enum WorkloadError {
-    #[error("{0}")]
-    Other(String),
-
-    #[error("IJS runtime error accured {0}")]
-    IJSError(#[from] ScriptError),
-
-    #[error("Could not fetch remote tree. {0}")]
-    RepositoryFetchError(#[from] RepositoryFetchError),
-
-    #[error("IO error accured {0}")]
-    IOError(#[from] std::io::Error),
-}
-
-#[derive(thiserror::Error, Debug)]
+#[derive(thiserror::Error, struct_field::AsError, strum::AsRefStr, Debug)]
 pub enum RepositoryFetchError {
-    #[error("A error accured while pulling remote tree. {0}")]
+    #[error("Failed to pull remote repository structure {0}")]
     NetworkError(#[from] HttpStreamError),
 
-    #[error("A error accured while parsing remote tree structure. {0}")]
+    #[error("Serialization error accured while attempting to parse repository weak structure {0}")]
     ParseError(#[from] serializer::SerializationError),
 }
 
-#[derive(thiserror::Error, Debug)]
+#[derive(thiserror::Error, struct_field::AsError, strum::AsRefStr, Debug)]
 pub enum WeakStructParseError {
-
-    #[error("IO Error accured while pulling weak structure from file. {0}")]
+    #[error("IO error accured while trying parse a weak structure {0}")]
     IOError(#[from] std::io::Error),
     
-    #[error("An error accured while parsing weak structure from file. {0}")]
+    #[error(transparent)]
     ParseError(#[from] SerializationError)
 }
 
-#[derive(thiserror::Error, Debug)]
+#[derive(thiserror::Error, struct_field::AsError, strum::AsRefStr, Debug)]
 pub enum PackageDownloadError {
 
-    #[error("A error accured while pulling package from repository. {0}")]
+    #[error("Was not able to pull package due to http stream error {0}")]
     NetworkError(#[from] HttpStreamError),
 
-    #[error("An error accured while downloading a package. {0}")]
+    #[error("Was not able to write package due to io error {0}")]
     IOError(#[from] std::io::Error)
 }
 
-#[derive(thiserror::Error, Debug)]
+#[derive(thiserror::Error, struct_field::AsError, strum::AsRefStr, Debug)]
 pub enum ScriptError {
     #[error("Attempted to pull the script from net but {0}")]
     HttpStreamError(#[from] HttpStreamError),
@@ -59,7 +45,7 @@ pub enum ScriptError {
     Other(String)
 }
 
-#[derive(thiserror::Error, Debug)]
+#[derive(thiserror::Error, struct_field::AsError, strum::AsRefStr, Debug)]
 pub enum PackageInstallError {
     #[error("An error accured while reading package file. {0}")]
     IOError(#[from] std::io::Error),
@@ -71,9 +57,8 @@ pub enum PackageInstallError {
     SummaryIOError(#[from] WeakStructParseError)
 }
 
-#[derive(thiserror::Error, Debug)]
+#[derive(thiserror::Error, struct_field::AsError, strum::AsRefStr, Debug)]
 pub enum PackageUninstallError {
-
     #[error("Package is not installed.")]
     InstallitionNotFound,
 
@@ -84,9 +69,9 @@ pub enum PackageUninstallError {
     SummaryIOError(#[from] WeakStructParseError)
 }
 
-#[derive(thiserror::Error, Debug)]
+#[derive(thiserror::Error, struct_field::AsError, strum::AsRefStr, Debug)]
 pub enum RepositoryCrossCheckError {
-    
+ 
     #[error("Failed to get remote tree. {0}")]
     FailedToFetchRemoteTree(#[from] RepositoryFetchError),
 

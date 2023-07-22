@@ -1,8 +1,9 @@
 use std::{path::Path, io::Read};
 
 use serde::Deserialize;
+use crate::{*, error::*};
 
-#[derive(thiserror::Error, Debug)]
+#[derive(thiserror::Error, struct_field::AsError, strum::AsRefStr, Debug)]
 pub enum SerializationError {
     #[error("IO error {0}")]
     Io(#[from] std::io::Error),

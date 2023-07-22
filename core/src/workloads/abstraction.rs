@@ -4,7 +4,7 @@ use async_trait::async_trait;
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
 
-use crate::{http::client::{self, HttpStreamError}, archiving, target::error::{SymlinkError, AppEntryError}, helpers::tmp};
+use crate::{http::client::{self, HttpStreamError}, archiving, target::error::{SymlinkError, AppEntryError}, helpers::tmp, error::Error};
 
 use super::{definitions::*, error::*};
 
@@ -35,7 +35,7 @@ impl<T: Default + Clone> AppWrapper<T> {
 }
 
 
-#[derive(Clone, Debug)]
+#[derive(Debug, Clone)]
 pub enum WorkloadResult {
     Ok,
     Error(String)
@@ -273,8 +273,8 @@ impl InstallyApp
         crate::sys::create_app_entry(app, maintenance_tool_name)
     }
 
-    pub fn create_maintenance_tool(&self, app: &InstallyApp, maintenance_tool_name: &str) -> std::io::Result<()> {
-        crate::sys::create_maintenance_tool(app, maintenance_tool_name)
+    pub fn create_maintenance_tool(&self, app: &InstallyApp, maintenance_tool_name: &str) -> Result<(), std::io::Error> {
+        Ok(crate::sys::create_maintenance_tool(app, maintenance_tool_name)?)
     }
 
     pub fn create_progress_closure(&self) -> Box<dyn Fn(f32) + Send> {
@@ -287,5 +287,5 @@ impl InstallyApp
 
 #[async_trait]
 pub trait Workload {      
-    async fn run(&self) -> Result<(), WorkloadError>;           
+    async fn run(&self) -> Result<(), Error>;           
 }

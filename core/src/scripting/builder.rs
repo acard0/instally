@@ -262,8 +262,8 @@ mod tests {
                 try 
                 {
                     log("Checking WebView2 version");
-                    var key = "HKEY_LOCAL_MACHINE\\SOFTWARE\\WOW6432Node\\Microsoft\\EdgeUpdate\\Clients\\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}";
-                    var pv = Installer.read_reg(key, "pv");
+                    var key = "HKEY_CURRENT_USER\\Software\\Microsoft\\EdgeWebView\\BLBeacon";
+                    var pv = Installer.read_reg(key, "version");
                     log(`WebView2 version: ${pv}`);
                 } catch (err) {
                     log('WebView2 is not installed. Installing...');

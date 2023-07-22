@@ -1,4 +1,4 @@
-use std::{fs::{File}, io, path::{self, Path}};
+use std::{io, path::{self, Path}, fs::File};
 
 use filepath::FilePath;
 use walkdir::WalkDir;

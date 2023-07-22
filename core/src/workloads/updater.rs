@@ -1,11 +1,11 @@
 
 use std::fmt::{Formatter, Display};
 
-use super::{definitions::*, error::*, abstraction::*};
+use super::{definitions::*, abstraction::*};
 
 use async_trait::async_trait;
 
-use crate::*;
+use crate::{*, error::Error};
 
 pub type UpdaterWrapper = AppWrapper<UpdaterOptions>;
 
@@ -22,19 +22,17 @@ impl Default for UpdaterOptions {
 
 #[async_trait]
 impl Workload for UpdaterWrapper {
-    async fn run(&self) -> Result<(), WorkloadError> {
+    async fn run(&self) -> Result<(), Error> {
         let global = self.app.get_global_script().await?;
         global.if_exist(|s| Ok(s.invoke_before_update()))?;
 
         self.app.set_workload_state(UpdaterWorkloadState::FetchingRemoteTree(self.app.get_product().name.clone()));  
 
-        let summary = self.app.get_installition_summary_target()
-            .map_err(|err| WorkloadError::Other(err.to_string()))?;
+        let summary = self.app.get_installition_summary_target()?;
     
         let repository = self.app.get_repository();
 
-        let state = summary.cross_check(&repository.packages)
-            .map_err(|err| WorkloadError::Other(err.to_string()))?;
+        let state = summary.cross_check(&repository.packages)?;
 
         log::info!("Starting to update {}", &self.app.get_product().name);
         log::info!("Installed packages: {}", summary.packages.iter().map(|e| e.display_name.clone()).collect::<Vec<_>>().join(", "));
@@ -63,14 +61,12 @@ impl Workload for UpdaterWrapper {
             log::info!("Downloading the package file from {}", &self.app.get_product().get_uri_to_package(&remote));
             self.app.set_workload_state(UpdaterWorkloadState::DownloadingComponent(remote.display_name.clone()));
 
-            let package_file = self.app.get_package(&remote).await
-                .map_err(|err| WorkloadError::Other(err.to_string()))?;
+            let package_file = self.app.get_package(&remote).await?;
 
             log::info!("Decompression of {}", &remote.display_name);
             self.app.set_workload_state(UpdaterWorkloadState::InstallingComponent(remote.display_name.clone()));
 
-            self.app.install_package(&remote, &package_file)
-                .map_err(|err| WorkloadError::Other(err.to_string()))?;
+            self.app.install_package(&remote, &package_file)?;
 
             script.if_exist(|s| {
                 s.invoke_after_update();
