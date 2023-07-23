@@ -15,11 +15,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     std::env::set_var("STANDALONE_EXECUTION", "1");  
     env_logger::init();
 
-    let payload_result = quick_xml::de::from_str(PAYLOAD.strip_prefix("###/PAYLOAD/###").unwrap());
-    let product = match payload_result {
-        Ok(r) => {
+    let template_result = quick_xml::de::from_str(PAYLOAD.strip_prefix("###/PAYLOAD/###").unwrap());
+    let product = match template_result {
+        Ok(template) => {
             log::info!("Payload Product is valid. Using it.");
-            r
+            Product::from_template(template)
+                .map_err(|err| format!("Failed to create product from template: {}", err))?
         },
         Err(_) => {
             #[cfg(not(debug_assertions))]

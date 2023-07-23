@@ -34,7 +34,7 @@ fn inner(args: Opt) -> Result<(), Error> {
     let config_dir = Path::new(&args.config);
     let product_path = config_dir.join("product.xml");
 
-    let product = Product::read_file(product_path).unwrap();
+    let tmp_product = Product::read_template(product_path).unwrap();
 
     std::fs::copy("instally-scaffold.exe", "Setup.exe")?;
     let file = std::cell::RefCell::new(OpenOptions::new()
@@ -53,7 +53,7 @@ fn inner(args: Opt) -> Result<(), Error> {
 
         println!("Found to start of payload at position {}", pos as usize + query.len());
 
-        let xml_str = serializer::to_xml(&product).unwrap();
+        let xml_str = serializer::to_xml(&tmp_product).unwrap();
         let xml = xml_str.as_bytes();
 
         file.borrow_mut().seek(Start(pos + query.len() as u64)).unwrap();

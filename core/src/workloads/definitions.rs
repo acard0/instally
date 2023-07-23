@@ -20,6 +20,11 @@ pub struct Product {
 }
 
 impl Product{
+    pub fn read_template<P: AsRef<Path>>(path: P) -> Result<Product, WeakStructParseError> {
+        let template: Product = serializer::from_file(path)?;
+        Ok(template)
+    }
+
     pub fn read() -> Result<Product, WeakStructParseError> {
         Self::read_file(Path::new("product.xml"))
     }

@@ -29,8 +29,8 @@ fn main() {
     let config_dir = Path::new(&opt.config);
     let product_path = config_dir.join("product.xml");
 
-    let product = Product::read_file(product_path).unwrap();
-    let mut repository = Repository::new(&product.name, 0);
+    let tmp_product = Product::read_template(product_path).unwrap();
+    let mut repository = Repository::new(&tmp_product.name, 0);
 
     let repository_packages_dir = target_dir.join("packages");
     std::fs::create_dir_all(repository_packages_dir.clone()).unwrap();
@@ -70,10 +70,10 @@ fn main() {
         repository.size += size;
     }
 
-    if !product.script.is_empty() {
-        repository.script = product.script.clone();
-        let global_script_path = config_dir.join(product.script.clone());
-        std::fs::copy(global_script_path, target_dir.join(product.script)).unwrap();
+    if !tmp_product.script.is_empty() {
+        repository.script = tmp_product.script.clone();
+        let global_script_path = config_dir.join(tmp_product.script.clone());
+        std::fs::copy(global_script_path, target_dir.join(tmp_product.script)).unwrap();
     }
 
     let repository_xml = serializer::to_xml(&repository).unwrap();
