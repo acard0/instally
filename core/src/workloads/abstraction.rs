@@ -4,7 +4,7 @@ use async_trait::async_trait;
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
 
-use crate::{http::client::{self, HttpStreamError}, archiving, target::error::{SymlinkError, AppEntryError}, helpers::tmp, error::Error};
+use crate::{http::client::{self, HttpStreamError}, archiving, target::error::{SymlinkError, AppEntryError}, helpers::tmp, error::{Error, ErrorDetails}};
 
 use super::{definitions::*, error::*};
 
@@ -38,7 +38,7 @@ impl<T: Default + Clone> AppWrapper<T> {
 #[derive(Debug, Clone)]
 pub enum WorkloadResult {
     Ok,
-    Error(String)
+    Error(ErrorDetails)
 }
 
 impl Display for WorkloadResult {
@@ -58,7 +58,7 @@ impl WorkloadResult {
         }
     }
 
-    pub fn get_error(&self) -> Option<String> {
+    pub fn get_error(&self) -> Option<ErrorDetails> {
         match self {
             Self::Error(err) => Some(err.clone()),
             _ => None,

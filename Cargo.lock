@@ -2574,7 +2574,7 @@ dependencies = [
 [[package]]
 name = "rust-i18n"
 version = "2.0.1-x"
-source = "git+https://github.com/acard0/rust-i18n?rev=d05262f#d05262fbf9d1fc23725e89f91465c30a932a53c7"
+source = "git+https://github.com/acard0/rust-i18n?rev=1709ddd#1709dddd7ca2fc7cce27a5f76ee7dd54bab9b7c0"
 dependencies = [
  "anyhow",
  "clap",
@@ -2594,7 +2594,7 @@ dependencies = [
 [[package]]
 name = "rust-i18n-extract"
 version = "2.0.0"
-source = "git+https://github.com/acard0/rust-i18n?rev=d05262f#d05262fbf9d1fc23725e89f91465c30a932a53c7"
+source = "git+https://github.com/acard0/rust-i18n?rev=1709ddd#1709dddd7ca2fc7cce27a5f76ee7dd54bab9b7c0"
 dependencies = [
  "anyhow",
  "ignore",
@@ -2611,7 +2611,7 @@ dependencies = [
 [[package]]
 name = "rust-i18n-macro"
 version = "2.0.0"
-source = "git+https://github.com/acard0/rust-i18n?rev=d05262f#d05262fbf9d1fc23725e89f91465c30a932a53c7"
+source = "git+https://github.com/acard0/rust-i18n?rev=1709ddd#1709dddd7ca2fc7cce27a5f76ee7dd54bab9b7c0"
 dependencies = [
  "glob",
  "once_cell",
@@ -2628,7 +2628,7 @@ dependencies = [
 [[package]]
 name = "rust-i18n-support"
 version = "2.0.0"
-source = "git+https://github.com/acard0/rust-i18n?rev=d05262f#d05262fbf9d1fc23725e89f91465c30a932a53c7"
+source = "git+https://github.com/acard0/rust-i18n?rev=1709ddd#1709dddd7ca2fc7cce27a5f76ee7dd54bab9b7c0"
 dependencies = [
  "globwalk",
  "once_cell",

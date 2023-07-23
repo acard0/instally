@@ -78,8 +78,8 @@ fn installer(wrapper: InstallerWrapper) -> tokio::task::JoinHandle<WorkloadResul
                 log::error!("\n{err:?}");
                 log::info!("Workload failed. \n{err:?}");
 
-                let result = WorkloadResult::Error(err.to_string());
-                wrapper.app.set_workload_state(InstallerWorkloadState::Interrupted(err.to_string()).to_string());
+                let result = WorkloadResult::Error(err.get_details().to_owned());
+                wrapper.app.set_workload_state(InstallerWorkloadState::Interrupted(err.get_details().to_owned()));
                 wrapper.app.set_result(result.clone());
                 result
             }
@@ -105,8 +105,8 @@ fn updater(wrapper: UpdaterWrapper) -> tokio::task::JoinHandle<WorkloadResult> {
                 log::error!("\n{err:?}");
                 log::info!("Workload failed. \n{err:?}");
 
-                let result = WorkloadResult::Error(err.to_string());
-                wrapper.app.set_workload_state(UpdaterWorkloadState::Interrupted(err.to_string()));
+                let result = WorkloadResult::Error(err.get_details().to_owned());
+                wrapper.app.set_workload_state(UpdaterWorkloadState::Interrupted(err.get_details().to_owned()));
                 wrapper.app.set_result(result.clone());
                 result
             }
@@ -133,8 +133,8 @@ fn uninstaller(wrapper: UninstallerWrapper) -> tokio::task::JoinHandle<WorkloadR
                 log::error!("\n{err:?}");
                 log::info!("Workload failed. \n{err:?}");
 
-                let result = WorkloadResult::Error(err.to_string());
-                wrapper.app.set_workload_state(UninstallerWorkloadState::Interrupted(err.to_string()));
+                let result = WorkloadResult::Error(err.get_details().to_owned());
+                wrapper.app.set_workload_state(UninstallerWorkloadState::Interrupted(err.get_details().to_owned()));
                 wrapper.app.set_result(result.clone());
                 result
             }

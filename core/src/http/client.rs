@@ -3,18 +3,20 @@ use futures::StreamExt;
 use std::{fs::File, cmp::min, io::Write};
 use bytes::Bytes;
 
-#[derive(thiserror::Error, Debug)]
+use crate::{*, error::*};
+
+#[derive(thiserror::Error, struct_field::AsDetails, strum::AsRefStr, Debug)]
 pub enum HttpStreamError {
-    #[error("A network error accured. {0}")]
+    #[error("network-error")]
     NetworkError(#[from] reqwest::Error),
 
-    #[error("Did not receive content length.")]
+    #[error("content-length-error")]
     ContentLengthError,
 
-    #[error("Failed to pull stream chunk into file. {0}")]
+    #[error("{}", .0.get_message_key())]
     PullToFileError(#[from] std::io::Error),
 
-    #[error("Failed to pull stream chunk into utf8 string. {0}")]
+    #[error("pull-to-string-utf8-error")]
     PullToStringError(#[from] std::string::FromUtf8Error)
 }
 

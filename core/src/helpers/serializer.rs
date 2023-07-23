@@ -3,11 +3,12 @@ use std::{path::Path, io::Read};
 use serde::Deserialize;
 use crate::{*, error::*};
 
-#[derive(thiserror::Error, struct_field::AsError, strum::AsRefStr, Debug)]
+#[derive(thiserror::Error, struct_field::AsDetails, strum::AsRefStr, Debug)]
 pub enum SerializationError {
-    #[error("IO error {0}")]
+    #[error("{}", .0.get_message_key())]
     Io(#[from] std::io::Error),
-    #[error("XML error {0}")]
+
+    #[error("deserialization-error")]
     Xml(#[from] quick_xml::DeError),
 }
 

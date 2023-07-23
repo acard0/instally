@@ -35,7 +35,9 @@ repository-fetch-error:
   parse-error: "Depo zayıf yapısı ayrıştırılamadı."
 
 weak-struct-parse-error:
-  io-error: "Dosyadan zayıf yapı yüklenemedi."
+  io-error:
+    permission-denied: "Dosyadan zayıf yapı yüklenemedi."
+    permission-denied.suggestion: "Programı yönetici olarak çalıştırmayı deneyin."
   parse-error: "Dosyadan yüklenen zayıf yapı ayrıştırılamadı."
 
 package-download-error:
@@ -79,3 +81,7 @@ os-error:
 
 ijs-error:
   other: "Belirtilmemiş bir JavaScript motoru hatası oluştu."
+
+io-error: "Dosya hatası"
+io-error.permission-denied: "Dosya erişim isteği rededildi."
+io-error.permission-denied.suggestion: "Programı yönetici olarak çalıştırmayı dene."

@@ -35,7 +35,9 @@ repository-fetch-error:
   parse-error: "Could not parse repository weak structure."
 
 weak-struct-parse-error:
-  io-error: "Could not load weak structure from file."
+  io-error: 
+    permission-denied: "Permission denied while accessing to a file/path."
+    permission-denied.suggestion: "Please start the application with administrator privileges."
   parse-error: "Could not parse weak structure loaded from file."
 
 package-download-error:
@@ -79,3 +81,7 @@ os-error:
 
 ijs-error:
   other: "An unspecified JavaScript engine error occurred."
+
+io-error: "IO error"
+io-error.permission-denied: Permission denied while accessing to a file/path.
+io-error.permission-denied.suggestion: Please start the application with administrator privileges.

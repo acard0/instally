@@ -5,7 +5,7 @@ use super::{definitions::*, abstraction::*};
 
 use async_trait::async_trait;
 
-use crate::{*, error::Error};
+use crate::{*, error::{Error, ErrorDetails}};
 
 pub type UpdaterWrapper = AppWrapper<UpdaterOptions>;
 
@@ -87,7 +87,7 @@ pub enum UpdaterWorkloadState {
     FetchingRemoteTree(String),
     DownloadingComponent(String),
     InstallingComponent(String),
-    Interrupted(String),
+    Interrupted(ErrorDetails),
     Aborted,
     Done,
 }
@@ -108,8 +108,8 @@ impl Display for UpdaterWorkloadState {
                 write!(f, "{:?}", t!("states.installing", [s]))
             },
 
-            UpdaterWorkloadState::Interrupted(s) => {
-                write!(f, "{:?}", t!("states.interrupted.by-error", [s]))
+            UpdaterWorkloadState::Interrupted(e) => {
+                write!(f, "{:?}", t!("states.interrupted.by-error", [e.to_string()]))
             },
             
             UpdaterWorkloadState::Aborted => {

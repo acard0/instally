@@ -3,7 +3,7 @@ use std::process;
 
 use eframe::egui;
 use egui::ProgressBar;
-use instally_core::{workloads::abstraction::InstallyApp, *};
+use instally_core::{workloads::abstraction::{InstallyApp, WorkloadResult}, *};
 
 pub struct AppWrapper {
     app: InstallyApp,
@@ -27,24 +27,37 @@ impl eframe::App for AppWrapper{
 
             ui.with_layout(egui::Layout::top_down_justified(egui::Align::Center), |ui| {
 
-                // state information
+                match app.get_result() {
+                    Some(result) => {
+                        match result {
+                            WorkloadResult::Ok => {
+                                ui.label(t!("states.completed"));
+                            },
+                            WorkloadResult::Error(e) => {
+                                ui.label(e.message);
+                                match e.suggestion {
+                                    Some(s) => {
+                                        ui.label(s);
+                                    },
+                                    None => {}
+                                }
+                            },
+                        }
+
+                        return;
+                    },
+                    _ => {}
+                }
+
                 ui.label(app.get_state_information());
 
-                // state progress
-                let value = match app.is_completed() {
-                    true => 0.999,
-                    _ => {  // at 1.0 ui stops updating itself, bug
-                        let q = app.get_progress() / 100.0;
-                        f32::min(q, 0.999)
-                    }
-                };
+                let q = app.get_progress() / 100.0;
+                let value = f32::min(q, 0.999);
                 
-                // progress bar
                 let progress_bar = ui.add(ProgressBar::new(value)
                     .animate(!app.is_completed())
                 );
             
-                // progress bar text, centered
                 let mut progress_text = egui::text::LayoutJob::simple_singleline(
                     format!("%{:.1}", ((value + 0.001) * 100.0)),
                     egui::FontId::new(11.0, egui::FontFamily::default()),
@@ -52,7 +65,6 @@ impl eframe::App for AppWrapper{
                 );
                 progress_text.halign = egui::Align::Center;
                 ui.put(progress_bar.rect, egui::Label::new(progress_text));
-                
             });
         
             ui.with_layout(egui::Layout::bottom_up(egui::Align::RIGHT), |ui| {

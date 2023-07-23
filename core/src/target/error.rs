@@ -2,25 +2,25 @@
 use std::io;
 use crate::{*, error::*};
 
-#[derive(thiserror::Error, struct_field::AsError, strum::AsRefStr, Debug)]
+#[derive(thiserror::Error, struct_field::AsDetails, strum::AsRefStr, Debug)]
 pub enum AppEntryError {
-    #[error("Failed to modify app entry {0}")]
+    #[error("{}", .0.get_message_key())]
     OsError(#[from] OsError),
 
-    #[error("Failed to modify app entry {0}")]
+    #[error("{}", .0.get_message_key())]
     IoError(#[from] io::Error)
 }
 
-#[derive(thiserror::Error, struct_field::AsError, strum::AsRefStr, Debug)]
+#[derive(thiserror::Error, struct_field::AsDetails, strum::AsRefStr, Debug)]
 pub enum SymlinkError {
-    #[error("Failed to perform symlink operation {0}")]
+    #[error("{}", .0.get_message_key())]
     OsError(#[from] OsError),
 
-    #[error("Failed to perform symlink operation {0}")]
+    #[error("{}", .0.get_message_key())]
     IoError(#[from] io::Error)
 }
 
-#[derive(thiserror::Error, struct_field::AsError, strum::AsRefStr, Debug)]
+#[derive(thiserror::Error, struct_field::AsDetails, strum::AsRefStr, Debug)]
 pub enum OsError {
     #[error("{0}")]
     Other(String)

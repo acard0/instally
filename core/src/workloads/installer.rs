@@ -1,7 +1,7 @@
 
 use std::fmt::{Display, Formatter};
 
-use crate::{*, error::Error};
+use crate::{*, error::{Error, ErrorDetails}};
 
 use super::{definitions::*, abstraction::*};
 
@@ -85,7 +85,7 @@ pub enum InstallerWorkloadState {
     FetchingRemoteTree(String),
     DownloadingComponent(String),
     InstallingComponent(String),
-    Interrupted(String),
+    Interrupted(ErrorDetails),
     Aborted,
     Done,
 }
@@ -106,8 +106,8 @@ impl Display for InstallerWorkloadState {
                 write!(f, "{:?}", t!("states.installing", [s]))
             },
 
-            InstallerWorkloadState::Interrupted(s) => {
-                write!(f, "{:?}", t!("states.interrupted.by-error", [s]))
+            InstallerWorkloadState::Interrupted(e) => {
+                write!(f, "{:?}", t!("states.interrupted.by-error", [e.to_string()]))
             },
             
             InstallerWorkloadState::Aborted => {

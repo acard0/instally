@@ -3,25 +3,48 @@ use proc_macro2::{Ident, Span};
 use quote::{quote, ToTokens};
 use syn::{Attribute, DeriveInput, Fields, Meta, NestedMeta, Type, Visibility};
 
-#[proc_macro_derive(AsError)]
+#[proc_macro_derive(AsDetails)]
 pub fn derive_this_error(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let ast = syn::parse_macro_input!(input as DeriveInput);
 
     let name = &ast.ident;
 
     let impl_block = quote! {
+        impl AsDetails for #name {
+            fn get_message_key(&self) -> String {
+                use convert_case::{Case, Casing};
+                let name = stringify!(#name).to_case(Case::Kebab);
+                let inner = self.to_string();
+                format!("{}.{}", &name, &inner)
+            }
+
+            fn get_suggestion_key(&self) -> String {
+                format!("{}.suggestion", self.get_message_key())
+            }
+            
+            fn as_details(&self) -> ErrorDetails {
+                use convert_case::{Case, Casing};
+                let name = stringify!(#name).to_case(Case::Kebab);
+                let message_key = self.get_message_key();
+                let suggestion_key = self.get_suggestion_key();
+        
+                let message = t!(&message_key);
+                let suggestion = t!(&suggestion_key);
+        
+                let suggestion = match suggestion != suggestion_key {
+                    true => Some(suggestion),
+                    false => None
+                };
+
+                ErrorDetails::new(&name, &message, suggestion)
+            }
+        }
+
         impl From<#name> for Error {
             fn from(value: #name) -> Self {
                 use convert_case::*;
-
-                let variant = value.as_ref()
-                    .to_case(Case::Kebab);
-
-                let name = stringify!(#name)
-                    .to_case(Case::Kebab);
-
-                let translation = t!(&format!("{}.{}", name, variant));
-                Error::new(ErrorRepr::new(value), &translation) 
+                let details = value.as_details();
+                Error::new(value, details)
             }
         }
     };
