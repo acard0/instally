@@ -1550,6 +1550,7 @@ dependencies = [
  "instally-core",
  "log",
  "once_cell",
+ "static_vcruntime",
  "tokio",
 ]
 

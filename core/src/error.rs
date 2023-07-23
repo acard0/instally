@@ -2,6 +2,8 @@ use std::fmt::Display;
 
 use convert_case::{Case, Casing};
 
+use crate::*;
+
 #[derive(thiserror::Error, Debug)]
 pub struct Error {
     source: Repr,
@@ -83,8 +85,8 @@ impl From<std::io::Error> for Error {
 impl AsDetails for std::io::Error {
     fn as_details(&self) -> ErrorDetails {
         let name = "io-error";
-        let message_key = self.get_message_key();
-        let suggestion_key = self.get_suggestion_key();
+        let message_key = t!(&self.get_message_key());
+        let suggestion_key = t!(&self.get_suggestion_key());
 
         ErrorDetails::new(name, &message_key, Some(suggestion_key.to_owned()))
     }

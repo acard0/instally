@@ -24,6 +24,7 @@ impl Default for InstallerOptions {
 impl Workload for InstallerWrapper {
     async fn run(&self) -> Result<(), Error> {
         log::info!("Starting to install {}", &self.app.get_product().name);
+        log::info!("Target directory {}", &self.app.get_product().target_directory);
 
         let global = self.app.get_global_script().await?;
         global.if_exist(|s| Ok(s.invoke_before_installition()))?;
