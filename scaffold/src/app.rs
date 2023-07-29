@@ -1,7 +1,7 @@
 
 use std::process;
 
-use eframe::egui;
+use eframe::{egui, epaint::pos2};
 use egui::ProgressBar;
 use instally_core::{workloads::abstraction::{InstallyApp, WorkloadResult}, *};
 
@@ -19,15 +19,13 @@ impl eframe::App for AppWrapper{
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
 
         let binding = self.app.get_context();
-        let app = binding.lock();
+        let state = binding.lock();
+        let product = self.app.get_product();
 
-        custom_window_frame(ctx, frame, format!("instally - {}", self.app.get_product().name).as_ref(), |ui| {
-
+        custom_window_frame(ctx, frame, format!("{}", &product.publisher).as_ref(), &product.name, |ui| {
             ui.add_space(15.0);
-
             ui.with_layout(egui::Layout::top_down_justified(egui::Align::Center), |ui| {
-
-                match app.get_result() {
+                match state.get_result() {
                     Some(result) => {
                         match result {
                             WorkloadResult::Ok => {
@@ -49,13 +47,13 @@ impl eframe::App for AppWrapper{
                     _ => {}
                 }
 
-                ui.label(app.get_state_information());
+                ui.label(state.get_state_information());
 
-                let q = app.get_progress() / 100.0;
+                let q = state.get_progress() / 100.0;
                 let value = f32::min(q, 0.999);
                 
                 let progress_bar = ui.add(ProgressBar::new(value)
-                    .animate(!app.is_completed())
+                    .animate(!state.is_completed())
                 );
             
                 let mut progress_text = egui::text::LayoutJob::simple_singleline(
@@ -68,13 +66,21 @@ impl eframe::App for AppWrapper{
             });
         
             ui.with_layout(egui::Layout::bottom_up(egui::Align::RIGHT), |ui| {
-                if ui.button(t!(if app.is_completed() { "ok" } else { "abort" })).clicked() {
+                let button = ui.button(t!(if state.is_completed() { "ok" } else { "abort" }));
+
+                if button.clicked() {
                     process::exit(1);
                 }
+
+                let painter = ui.painter();
+                painter.text(
+                    pos2(10.0, button.rect.left_center().y + 2.0),
+                    egui::Align2::LEFT_CENTER,
+                    &product.product_url,
+                    egui::FontId::proportional(12.0),
+                    MOCHA.text,
+                );
             });
-
-            // 
-
         });
     }
 
@@ -87,6 +93,7 @@ fn custom_window_frame(
     ctx: &egui::Context,
     frame: &mut eframe::Frame,
     title: &str,
+    sub_title: &str,
     add_contents: impl FnOnce(&mut egui::Ui),
 ) {
     use egui::*;
@@ -116,12 +123,19 @@ fn custom_window_frame(
             );
 
             // Paint the title:
-            let _ = painter.text(
-                rect.center_top() + vec2(0.0, height + 5.0 / 2.0),
-                Align2::CENTER_CENTER,
+            let rect_title = painter.text(
+                rect.left_top() + vec2(25.0, height + 5.0 / 2.0),
+                Align2::LEFT_CENTER,
                 title,
                 FontId::proportional(height * 0.8),
                 text_color,
+            );
+
+            // Paint a line below the title:
+            let _ = painter.hline(
+                10.0..=frame.info().window_info.size.x - 10.0,
+                rect_title.left_bottom().y + 2.0,
+                Stroke::new(2.0, Color32::from_rgb(36, 39, 58))
             );
 
             // Interact with the title bar (drag to move window):
