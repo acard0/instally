@@ -483,9 +483,9 @@ dependencies = [
 
 [[package]]
 name = "clap"
-version = "4.3.17"
+version = "4.3.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5b0827b011f6f8ab38590295339817b0d26f344aa4932c3ced71b45b0c54b4a9"
+checksum = "5fd304a20bff958a57f04c4e96a2e7594cc4490a0e809cbd48bb6437edaa452d"
 dependencies = [
  "clap_builder",
  "clap_derive",
@@ -494,9 +494,9 @@ dependencies = [
 
 [[package]]
 name = "clap_builder"
-version = "4.3.17"
+version = "4.3.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9441b403be87be858db6a23edb493e7f694761acdc3343d5a0fcaafd304cbc9e"
+checksum = "01c6a3f08f1fe5662a35cfe393aec09c4df95f60ee93b7556505260f75eee9e1"
 dependencies = [
  "anstream",
  "anstyle",
@@ -1561,7 +1561,7 @@ dependencies = [
  "clap",
  "instally-core",
  "patternscan",
- "quick-xml 0.29.0",
+ "quick-xml 0.30.0",
  "serde",
 ]
 
@@ -1580,7 +1580,7 @@ dependencies = [
  "log",
  "once_cell",
  "parking_lot",
- "quick-xml 0.29.0",
+ "quick-xml 0.30.0",
  "reqwest",
  "rquickjs",
  "rust-i18n",
@@ -1608,7 +1608,7 @@ dependencies = [
  "instally-core",
  "log",
  "once_cell",
- "quick-xml 0.29.0",
+ "quick-xml 0.30.0",
  "serde",
  "tokio",
  "walkdir",
@@ -1623,7 +1623,7 @@ dependencies = [
  "env_logger",
  "instally-core",
  "log",
- "quick-xml 0.29.0",
+ "quick-xml 0.30.0",
  "rust-i18n",
  "serde",
  "static_vcruntime",
@@ -2353,9 +2353,9 @@ dependencies = [
 
 [[package]]
 name = "quick-xml"
-version = "0.29.0"
+version = "0.30.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "81b9228215d82c7b61490fec1de287136b5de6f5700f6e58ea9ad61a7964ca51"
+checksum = "eff6510e86862b57b210fd8cbe8ed3f0d7d600b9c2863cd4549a2e033c66e956"
 dependencies = [
  "memchr",
  "serde",
@@ -2808,18 +2808,18 @@ dependencies = [
 
 [[package]]
 name = "serde"
-version = "1.0.173"
+version = "1.0.178"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e91f70896d6720bc714a4a57d22fc91f1db634680e65c8efe13323f1fa38d53f"
+checksum = "60363bdd39a7be0266a520dab25fdc9241d2f987b08a01e01f0ec6d06a981348"
 dependencies = [
  "serde_derive",
 ]
 
 [[package]]
 name = "serde_derive"
-version = "1.0.173"
+version = "1.0.178"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a6250dde8342e0232232be9ca3db7aa40aceb5a3e5dd9bddbc00d99a007cde49"
+checksum = "f28482318d6641454cb273da158647922d1be6b5a2fcc6165cd89ebdd7ed576b"
 dependencies = [
  "proc-macro2 1.0.63",
  "quote 1.0.29",
