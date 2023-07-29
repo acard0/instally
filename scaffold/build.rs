@@ -11,7 +11,7 @@ fn main() {
       link vcruntime
 
       could cross-compile instead of this but skia is used as software renderer 
-      by egui which is not cross-compiled
+      by egui which is does not support cross-compliation
      */
     static_vcruntime::metabuild();
   }
