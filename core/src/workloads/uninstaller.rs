@@ -27,7 +27,7 @@ impl Workload for UninstallerWrapper {
         global.if_exist(|s| Ok(s.invoke_before_uninstallition()))?;
 
         let repository = self.app.get_repository();
-        let summary_cell = RefCell::new(self.app.get_installition_summary_target()?);  
+        let summary_cell = RefCell::new(self.app.get_installition_summary()?);  
 
         let targets = match &self.settings.target_packages {
             Some(opted) => {

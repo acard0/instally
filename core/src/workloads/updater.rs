@@ -28,10 +28,8 @@ impl Workload for UpdaterWrapper {
 
         self.app.set_workload_state(UpdaterWorkloadState::FetchingRemoteTree(self.app.get_product().name.clone()));  
 
-        let summary = self.app.get_installition_summary_target()?;
-    
+        let summary = self.app.get_installition_summary()?;
         let repository = self.app.get_repository();
-
         let state = summary.cross_check(&repository.packages)?;
 
         log::info!("Starting to update {}", &self.app.get_product().name);

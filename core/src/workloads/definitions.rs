@@ -1,6 +1,6 @@
-use std::{ops::{Deref, DerefMut}, io::{Read, Write}, path::{PathBuf, Path}, process::Command, collections::HashMap, sync::Arc};
+use std::{ops::{Deref, DerefMut}, path::{PathBuf, Path}, process::Command, collections::HashMap, sync::Arc, io::{Read, Write}};
 
-use crate::{http::client, helpers::{versioning::version_compare, formatter::TemplateFormat, serializer}, scripting::{builder::{IJSContext, IJSRuntime}, error::IJSError}};
+use crate::{http::client, helpers::{versioning::version_compare, formatter::TemplateFormat, serializer, self, workflow::{self, Workflow}}, scripting::{builder::{IJSContext, IJSRuntime}, error::IJSError}};
 
 use super::{abstraction::InstallyApp, error::{WeakStructParseError, PackageUninstallError, RepositoryCrossCheckError, RepositoryFetchError, ScriptError}};
 
@@ -14,12 +14,23 @@ pub struct Product {
     pub name: String,
     pub publisher: String,
     pub product_url: String,
-    pub target_directory: String,
     pub repository: String,
     pub script: String,
+    target_directory: String,
 }
 
 impl Product{
+    pub fn new(name: &str, publisher: &str, product_url: &str, repository: &str, script: &str, target_directory: &str) -> Self {
+        Product {
+            name: name.to_owned(),
+            publisher: publisher.to_owned(),
+            product_url: product_url.to_owned(),
+            repository: repository.to_owned(),
+            script: script.to_owned(),
+            target_directory: target_directory.to_owned()
+        }
+    }
+
     pub fn read_template<P: AsRef<Path>>(path: P) -> Result<Product, WeakStructParseError> {
         let template: Product = serializer::from_file(path)?;
         Ok(template)
@@ -38,7 +49,11 @@ impl Product{
         let formatter = template.create_formatter();
         let back_step = serializer::to_xml(&template).unwrap();
         let xml = formatter.format(&back_step);
+
         let product: Product = serializer::from_str(&xml)?;
+        let current = std::env::current_dir().unwrap();
+        let target = &product.target_directory;
+
         Ok(product)
     }
 
@@ -59,8 +74,8 @@ impl Product{
             .add_replacement("Directories.User.Desktop", directories.desktop_dir().unwrap().to_str().unwrap())
     }
 
-    pub fn get_path_to_package(&self, _package: &Package) -> &std::path::Path {
-        std::path::Path::new(&self.target_directory)
+    pub fn get_path_to_package(&self, _package: &Package) -> std::path::PathBuf {
+        self.get_relative_target_directory()
     }
 
     pub fn get_uri_to_package(&self, package: &Package) -> String {
@@ -95,6 +110,21 @@ impl Product{
         std::env::current_dir().unwrap().join("product.xml")
     }
 
+    pub fn get_relative_target_directory(&self) -> std::path::PathBuf {
+        match workflow::get_workflow() {
+            Workflow::FreshInstallition => {
+                std::path::Path::new(&self.target_directory).to_path_buf()
+            }
+            _ => {
+                std::env::current_dir().unwrap()
+            }
+        }  
+    }
+
+    pub fn get_target_directory(&self) -> std::path::PathBuf {
+        std::path::Path::new(&self.target_directory).to_path_buf()
+    }
+
     pub async fn fetch_repository(&self) -> Result<Repository, RepositoryFetchError> {
         let xml_uri = format!("{}repository.xml", &self.repository);
         let mut xml = client::get_text(&xml_uri, |_| ()).await?;
@@ -107,8 +137,7 @@ impl Product{
     }
 
     pub fn dump(&self) -> Result<(), WeakStructParseError> {
-        let mut file = std::fs::OpenOptions::new().create(true).write(true).
-            read(true).truncate(true).open(&self.get_path_to_self_struct_target())?;
+        let mut file = helpers::file::open_create(&self.get_path_to_self_struct_target())?;
 
         file.write_all(serializer::to_xml(self)?.as_bytes())?;
 
@@ -328,6 +357,12 @@ impl DerefMut for InstallitionSummary {
 }
 
 impl InstallitionSummary {
+    pub fn read() -> Result<Self, WeakStructParseError> {
+        let struct_path = Path::new("instally_summary.xml");
+        let summary: InstallitionSummaryInner = serializer::from_file(struct_path)?;
+        Ok(InstallitionSummary { path: struct_path.to_path_buf(), inner: summary })
+    }
+
     pub fn read_or_create_target(product: &Product) -> Result<Self, WeakStructParseError> {
         Self::read_or_create(product, &std::path::PathBuf::from(&product.target_directory))
     }
@@ -335,13 +370,11 @@ impl InstallitionSummary {
     pub fn read_or_create(product: &Product, base: &PathBuf) -> Result<Self, WeakStructParseError> {
         let struct_path = base.join("instally_summary.xml");
 
-        let mut file = match std::fs::File::options()
-            .read(true).write(true).open(struct_path.clone()) {
+        let mut file = match helpers::file::open(struct_path.clone()) {
             Ok(f) => f,
             Err(err) =>  {
                 log::info!("Failed to open installition summary file. Creating new one. Trace: {}", err);
-                std::fs::File::options().create(true).read(true)
-                    .write(true).open(struct_path.clone())?
+                helpers::file::open_create(struct_path.clone())?
             }
         };
 
@@ -447,11 +480,8 @@ impl InstallitionSummary {
     }
     
     pub fn save(&mut self) -> Result<&mut Self, WeakStructParseError> {
-        let mut file = std::fs::File::options().create(true).read(true)
-            .truncate(true).write(true).open(self.path.clone())?;
-
+        let mut file = helpers::file::open_create(self.path.clone())?;
         file.write_all(serializer::to_xml(&self.inner)?.as_bytes())?;
-
         Ok(self)
     }
 }

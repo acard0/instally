@@ -1,5 +1,5 @@
 #![allow(dead_code, unused_variables)]
-// #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 
 use core::panic;
 
@@ -12,7 +12,6 @@ mod app;
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let rust_log = std::env::var("RUST_LOG").unwrap_or("info".into()); 
     std::env::set_var("RUST_LOG", rust_log);  
-    std::env::set_var("STANDALONE_EXECUTION", "1");  
     env_logger::init();
 
     let template_result = quick_xml::de::from_str(PAYLOAD.strip_prefix("###/PAYLOAD/###").unwrap());
@@ -31,22 +30,50 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             log::info!("Payload Product is not valid. Using dummy.");
             Product::from_template(
-                Product {
-                    name: "Wulite".to_owned(),
-                    publisher: "liteware.io".to_owned(),
-                    product_url: "https://liteware.io".to_owned(),
-                    target_directory: "@{Directories.User.Home}\\AppData\\Roaming\\@{App.Publisher}\\@{App.Name}".to_owned(),
-                    repository: "https://cdn.liteware.xyz/instally/wulite/".to_owned(),
-                    script: "global_script.js".to_owned(),
-                }
+                Product::new(
+                    "Wulite",
+                    "liteware.io",
+                    "https://liteware.io",
+                    "@{Directories.User.Home}\\AppData\\Roaming\\@{App.Publisher}\\@{App.Name}",
+                    "https://cdn.liteware.xyz/instally/wulite/",
+                    "global_script.js",
+                )
             ).unwrap()
         }
     };
 
+    let cwd_eq = std::env::current_dir().unwrap() == product.get_target_directory();
+    let summ_ok = InstallitionSummary::read().is_ok();
+    
+    if cwd_eq {
+        // existing installition & installition summary is corrupted
+        if !summ_ok {
+            log::info!("Launched at target directory but installition summary not found/is invalid. Aborting.");
+            return Ok(());
+        } else {
+            // set 'we are in maintinance mode'. installition seems valid.
+            std::env::set_var("MAINTINANCE_EXECUTION", "1");  
+            log::info!("At target directory & installition summary is present. Working as maintinance tool.");
+        }
+    // is this fresh installition or end-user moved installition folder?
+    } else {
+        // different target folder, ok...
+        if summ_ok {
+            // set 'we are in maintinance mode'. installition seems valid.
+            std::env::set_var("MAINTINANCE_EXECUTION", "1");  
+            log::warn!("Installition folder is moved & installition summary is present. Working as maintinance tool.");
+        } else {
+            // set 'we are in fresh installition mode'
+            std::env::set_var("STANDALONE_EXECUTION", "1");
+            log::info!("Fresh installition. Working as installer.");
+        }
+    }
+
     log::info!("Payload xml: {:?}", serializer::to_xml(&product));
+    log::info!("Target directory: {:?}", &product.get_relative_target_directory());
 
     log::info!("Terminating processes under the target directory");
-    instally_core::helpers::process::terminate_processes_under_folder(&product.target_directory)
+    instally_core::helpers::process::terminate_processes_under_folder(&product.get_relative_target_directory())
         .expect("Failed to terminate processes under the target directory!");
 
     let args = parse_args(&product).await;
@@ -72,8 +99,7 @@ async fn parse_args(product: &Product) -> Args {
         .fetch_repository().await
         .unwrap();
 
-    let installition_summary = InstallitionSummary::read_or_create_target(product)
-        .ok();
+    let installition_summary = InstallitionSummary::read().ok();
 
     let mut args = std::env::args();
     let mut command = None;
@@ -100,7 +126,7 @@ async fn parse_args(product: &Product) -> Args {
                     target_packages.get_or_insert_with(|| Vec::new())
                         .push(remote.clone());
 
-                    if let Some(summary) = installition_summary.as_ref() {
+                    if let Some(summary) = &installition_summary {
                         if let Some(local) = summary.find(&remote) {
                             target_local_packages.get_or_insert_with(|| Vec::new())
                                 .push(local);

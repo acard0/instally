@@ -48,7 +48,7 @@ fn main() {
         let package_xml_path = meta_dir.join("package.xml");
         let package_definition = PackageDefinition::from_file(&package_xml_path).unwrap();
 
-        let archive_name = format!("{}.zip", package_definition.name);
+        let archive_name = format!("{}{}.zip", package_definition.name,  package_definition.version);
         let archive_path = repository_packages_dir.join(archive_name.clone());
         archiving::zip_write::compress_dir(
             &data_dir,

@@ -24,7 +24,7 @@ impl Default for InstallerOptions {
 impl Workload for InstallerWrapper {
     async fn run(&self) -> Result<(), Error> {
         log::info!("Starting to install {}", &self.app.get_product().name);
-        log::info!("Target directory {}", &self.app.get_product().target_directory);
+        log::info!("Target directory {:?}", &self.app.get_product().get_relative_target_directory());
 
         let global = self.app.get_global_script().await?;
         global.if_exist(|s| Ok(s.invoke_before_installition()))?;
@@ -32,7 +32,7 @@ impl Workload for InstallerWrapper {
         self.app.set_workload_state(InstallerWorkloadState::FetchingRemoteTree(self.app.get_product().name.clone()));     
         let repository = self.app.get_repository();
 
-        std::fs::create_dir_all(&self.app.get_product().target_directory)?;
+        std::fs::create_dir_all(&self.app.get_product().get_relative_target_directory())?;
 
         // api uses product weak struct, resolves it from filesystem
         self.app.get_product().dump()?;
@@ -68,9 +68,10 @@ impl Workload for InstallerWrapper {
             })?;
         }
 
-        self.app.create_app_entry(&self.app, "maintenancetool")?;
-        
+        // means app is doing fresh installition. workload is not invoked by ffi api
+        // or via maintinancetool
         if std::env::var("STANDALONE_EXECUTION").is_ok() {
+            self.app.create_app_entry(&self.app, "maintenancetool")?;
             self.app.create_maintenance_tool(&self.app, "maintenancetool")?;
         }
 

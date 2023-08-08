@@ -1,5 +1,5 @@
 
-use crate::{workloads::{installer::{InstallerOptions, InstallerWrapper, InstallerWorkloadState}, uninstaller::{UninstallerOptions, UninstallerWrapper, UninstallerWorkloadState}, abstraction::{InstallyApp, Workload, WorkloadResult}, updater::{UpdaterWrapper, UpdaterWorkloadState, UpdaterOptions}, definitions::Product}, extensions::future::FutureSyncExt};
+use crate::{workloads::{installer::{InstallerOptions, InstallerWrapper, InstallerWorkloadState}, uninstaller::{UninstallerOptions, UninstallerWrapper, UninstallerWorkloadState}, abstraction::{InstallyApp, Workload, WorkloadResult}, updater::{UpdaterWrapper, UpdaterWorkloadState, UpdaterOptions}, definitions::Product}, extensions::future::FutureSyncExt, helpers::workflow};
 
 pub enum WorkloadType {
     Installer(InstallerOptions),
@@ -42,6 +42,8 @@ pub fn run(product_meta: &Product, settings: WorkloadType) -> Executor {
 }
 
 fn run_inner(app: &InstallyApp, settings: WorkloadType) -> tokio::task::JoinHandle<WorkloadResult> {
+    log::info!("Workflow env is {:?}", workflow::get_workflow());
+
     let join = match settings {
         WorkloadType::Installer(r) => {
             log::info!("Spawning installer workload thread");

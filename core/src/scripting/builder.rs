@@ -193,14 +193,14 @@ mod tests {
     #[test]
     fn test_localization() {
         let product = Product::from_template(
-            Product {
-                name: "Wulite".to_owned(),
-                publisher: "liteware.io".to_owned(),
-                product_url: "https://liteware.io".to_owned(),
-                target_directory: "@{Directories.User.Home}\\AppData\\Roaming\\@{App.Publisher}\\@{App.Name}".to_owned(),
-                repository: "https://cdn.liteware.xyz/instally/wulite/".to_owned(),
-                script: "global_script.js".to_owned(),
-            }
+            Product::new(
+                "Wulite",
+                "liteware.io",
+                "https://liteware.io",
+                "@{Directories.User.Home}\\AppData\\Roaming\\@{App.Publisher}\\@{App.Name}",
+                "https://cdn.liteware.xyz/instally/wulite/",
+                "global_script.js",
+            )
         ).unwrap();
 
         let app = InstallyApp::build(&product)
@@ -230,14 +230,14 @@ mod tests {
     #[test]
     fn test_dependency_check() {
         let product = Product::from_template(
-            Product {
-                name: "Wulite".to_owned(),
-                publisher: "liteware.io".to_owned(),
-                product_url: "https://liteware.io".to_owned(),
-                target_directory: "@{Directories.User.Home}\\AppData\\Roaming\\@{App.Publisher}\\@{App.Name}".to_owned(),
-                repository: "https://cdn.liteware.xyz/instally/wulite/".to_owned(),
-                script: "global_script.js".to_owned(),
-            }
+            Product::new(
+                "Wulite",
+                "liteware.io",
+                "https://liteware.io",
+                "@{Directories.User.Home}\\AppData\\Roaming\\@{App.Publisher}\\@{App.Name}",
+                "https://cdn.liteware.xyz/instally/wulite/",
+                "global_script.js",
+            )
         ).unwrap();
 
         let app = InstallyApp::build(&product)

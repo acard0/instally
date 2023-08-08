@@ -4,7 +4,7 @@ use async_trait::async_trait;
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
 
-use crate::{http::client::{self, HttpStreamError}, archiving, target::error::{SymlinkError, AppEntryError}, helpers::tmp, error::{Error, ErrorDetails}};
+use crate::{http::client::{self, HttpStreamError}, archiving, target::error::{SymlinkError, AppEntryError}, helpers::{tmp, workflow::{self, Workflow}}, error::{Error, ErrorDetails}};
 
 use super::{definitions::*, error::*};
 
@@ -237,9 +237,9 @@ impl InstallyApp
     pub fn install_package(&self, package: &Package, package_file: &PackageFile) -> Result<(), PackageInstallError> {
         let product = &self.product;
         let progress_closure = self.create_progress_closure();
-        let files = archiving::zip_read::extract_to(&package_file.handle.as_file(), product.get_path_to_package(package), &progress_closure)?;
+        let files = archiving::zip_read::extract_to(&package_file.handle.as_file(), &product.get_path_to_package(package), &progress_closure)?;
         
-        self.get_installition_summary_target()?
+        self.get_installition_summary()?
             .installed(package.clone(), files)
             .save()?;
 
@@ -256,13 +256,15 @@ impl InstallyApp
         client::get_text(url, progress_closure).await
     }
 
-    pub fn get_installition_summary_local(&self) -> Result<InstallitionSummary, WeakStructParseError> {
-        let current = std::env::current_dir().unwrap();
-        InstallitionSummary::read_or_create(&self.product, &current)
-    }
-
-    pub fn get_installition_summary_target(&self) -> Result<InstallitionSummary, WeakStructParseError> {
-        InstallitionSummary::read_or_create_target(&self.product)
+    pub fn get_installition_summary(&self) -> Result<InstallitionSummary, WeakStructParseError> {
+        match workflow::get_workflow() {
+            Workflow::FreshInstallition => {
+                InstallitionSummary::read_or_create_target(&self.product)
+            }
+            _ => {
+                InstallitionSummary::read()
+            }
+        }
     }
 
     pub fn symlink_file<P: AsRef<Path>, Q: AsRef<Path>>(&self, original: P, link_dir: Q, link_name: &str) -> Result<(), SymlinkError> {

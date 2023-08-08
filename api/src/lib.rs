@@ -22,7 +22,7 @@ impl Meta {
     pub fn get() -> Self {
         let product = Product::read().unwrap();
         let repository = product.fetch_repository().wait().unwrap();
-        let installition_summary = InstallitionSummary::read_or_create_target(&product).unwrap();
+        let installition_summary = InstallitionSummary::read().unwrap();
 
         Meta {
             product,

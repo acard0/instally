@@ -11,3 +11,4 @@ panic = "abort" # Smaller panic implementation
 
 [workspace.dependencies]
 rust-i18n = { git = "https://github.com/acard0/rust-i18n", rev = "1709ddd", features = [ "rust-i18n-extract", "clap", "anyhow", "quote", "itertools" ] }
+fs-err = "2.9.0"

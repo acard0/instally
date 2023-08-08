@@ -50,7 +50,8 @@ pub fn break_symlink_file<P: AsRef<Path>>(link_dir: P, link_name: &str) -> std::
 }
 
 pub fn create_app_entry(app: &InstallyApp, maintenance_tool_name: &str) -> Result<(), AppEntryError> {
-    let maintenance_tool_path = Path::join(Path::new(&app.get_product().target_directory), format!("{}.exe", maintenance_tool_name));
+    let target_dir = app.get_product().get_relative_target_directory();
+    let maintenance_tool_path = target_dir.join(format!("{}.exe", maintenance_tool_name));
 
     let hkey = RegKey::predef(HKEY_CURRENT_USER.0);
     let path = Path::new("Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\").join(&app.get_product().name);
@@ -68,7 +69,7 @@ pub fn create_app_entry(app: &InstallyApp, maintenance_tool_name: &str) -> Resul
     key.set_value("URLInfoAbout", &app.get_product().product_url)?;
     key.set_value("HelpLink", &app.get_product().product_url)?;
     key.set_value("URLUpdateInfo", &app.get_product().product_url)?;
-    key.set_value("InstallLocation", &app.get_product().target_directory)?;
+    key.set_value("InstallLocation", &target_dir.to_str().unwrap().to_owned())?;
     key.set_value("UninstallString", &format!(r#"{} /uninstall"#, maintenance_tool_path.to_str().unwrap()))?;
     
     Ok(())
@@ -76,7 +77,7 @@ pub fn create_app_entry(app: &InstallyApp, maintenance_tool_name: &str) -> Resul
 
 pub fn create_maintenance_tool(app: &InstallyApp, maintenance_tool_name: &str) -> std::io::Result<()> {
     let exec_path = std::env::current_exe().unwrap();
-    let copy_path = std::path::Path::new(&app.get_product().target_directory).join(format!("{}.exe", maintenance_tool_name));
+    let copy_path = std::path::Path::new(&app.get_product().get_relative_target_directory()).join(format!("{}.exe", maintenance_tool_name));
     _ = std::fs::copy(exec_path, copy_path)?;
     Ok(())
 }

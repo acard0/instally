@@ -1,4 +1,4 @@
-use std::{path::Path, io::Read};
+use std::path::Path;
 
 use serde::Deserialize;
 use crate::{*, error::*};
@@ -40,9 +40,6 @@ pub fn from_file<T, P: AsRef<Path>>(file: P) -> Result<T, SerializationError>
 where
     T: for<'de> Deserialize<'de>,
 {
-    let mut file = std::fs::OpenOptions::new().read(true).open(file)?;
-    let mut xml = String::new();  
-    file.read_to_string(&mut xml)?;
-
+    let xml = fs_err::read_to_string(&file)?;
     Ok(quick_xml::de::from_str(&xml)?)
 }
