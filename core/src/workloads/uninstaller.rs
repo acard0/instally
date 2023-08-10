@@ -74,12 +74,12 @@ impl Workload for UninstallerWrapper {
 
         if !all_done {
             log::info!("Was not able to delete all of the package files.");
+        } else {
+            log::info!("All packages and their files are deleted. App entry is deleted too.");
         }
 
         if summary.packages.len() == 0 {
             crate::sys::delete_app_entry(&self.app.get_product())?;
-            
-            log::info!("All packages and their files are deleted. App entry is deleted too.");
         }
 
         global.if_exist(|s| Ok(s.invoke_after_uninstallition()))?;
