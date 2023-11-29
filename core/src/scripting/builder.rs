@@ -195,6 +195,7 @@ mod tests {
         let product = Product::from_template(
             Product::new(
                 "Wulite",
+                "@{App.Name}",
                 "liteware.io",
                 "https://liteware.io",
                 "@{Directories.User.Home}\\AppData\\Roaming\\@{App.Publisher}\\@{App.Name}",
@@ -232,6 +233,7 @@ mod tests {
         let product = Product::from_template(
             Product::new(
                 "Wulite",
+                "@{App.Name}",
                 "liteware.io",
                 "https://liteware.io",
                 "@{Directories.User.Home}\\AppData\\Roaming\\@{App.Publisher}\\@{App.Name}",

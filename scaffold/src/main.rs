@@ -32,6 +32,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             Product::from_template(
                 Product::new(
                     "Wulite",
+                    "@{App.Name}",
                     "liteware.io",
                     "https://liteware.io",
                     "@{Directories.User.Home}\\AppData\\Roaming\\@{App.Publisher}\\@{App.Name}",

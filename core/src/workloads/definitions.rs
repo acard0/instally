@@ -12,6 +12,7 @@ use serde::{Deserialize, Serialize};
 #[serde(rename_all = "PascalCase")]
 pub struct Product {
     pub name: String,
+    pub title: String,
     pub publisher: String,
     pub product_url: String,
     pub repository: String,
@@ -20,9 +21,10 @@ pub struct Product {
 }
 
 impl Product{
-    pub fn new(name: &str, publisher: &str, product_url: &str, repository: &str, script: &str, target_directory: &str) -> Self {
+    pub fn new(name: &str, title: &str, publisher: &str, product_url: &str, repository: &str, script: &str, target_directory: &str) -> Self {
         Product {
             name: name.to_owned(),
+            title: title.to_owned(),
             publisher: publisher.to_owned(),
             product_url: product_url.to_owned(),
             repository: repository.to_owned(),
