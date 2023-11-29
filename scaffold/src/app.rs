@@ -22,7 +22,7 @@ impl eframe::App for AppWrapper{
         let state = binding.lock();
         let product = self.app.get_product();
 
-        custom_window_frame(ctx, frame, format!("{}", &product.publisher).as_ref(), &product.name, |ui| {
+        custom_window_frame(ctx, frame, format!("{}", &product.title).as_ref(), &product.publisher, |ui| {
             ui.add_space(15.0);
             ui.with_layout(egui::Layout::top_down_justified(egui::Align::Center), |ui| {
                 match state.get_result() {
