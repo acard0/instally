@@ -35,9 +35,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     "@{App.Name}",
                     "liteware.io",
                     "https://liteware.io",
-                    "@{Directories.User.Home}\\AppData\\Roaming\\@{App.Publisher}\\@{App.Name}",
-                    "https://cdn.liteware.xyz/instally/wulite/",
+                    "https://cdn.liteware.xyz/downloads/wulite/release/",
                     "global_script.js",
+                    "@{Directories.User.Home}\\AppData\\Roaming\\@{App.Publisher}\\@{App.Name}",
                 )
             ).unwrap()
         }
