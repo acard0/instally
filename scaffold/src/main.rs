@@ -28,7 +28,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 return Ok(());
             }
 
-            log::info!("Payload Product is not valid. Using dummy.");
+            log::info!("Payload Product is not valid and we are in debug env. Using dummy product for testing.");
             Product::from_template(
                 Product::new(
                     "Wulite",

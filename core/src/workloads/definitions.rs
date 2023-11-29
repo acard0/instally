@@ -94,8 +94,8 @@ impl Product{
 
     pub fn get_uri_to_global_script(&self, repository: &Repository) -> Option<String> {
         // product struct also contains script field but if for some unknown reason
-        // script file name at cloud gets changed it can cause issue as product struct is embeeded
-        // product field has to contain script name field because it will be used at binary generation
+        // script file name at cloud gets changed it can cause issue as product struct is embeded.
+        // also product struct has to contain script name field because it will be used at binary generation
 
         if repository.script.is_empty() {
             return None
