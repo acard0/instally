@@ -1240,11 +1240,11 @@ dependencies = [
 
 [[package]]
 name = "globwalk"
-version = "0.8.1"
+version = "0.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "93e3af942408868f6934a7b85134a3230832b9977cf66125df2f9edcfce4ddcc"
+checksum = "0bf760ebf69878d9fd8f110c89703d90ce35095324d1f1edcb595c63945ee757"
 dependencies = [
- "bitflags 1.3.2",
+ "bitflags 2.3.3",
  "ignore",
  "walkdir",
 ]
@@ -1682,9 +1682,9 @@ dependencies = [
 
 [[package]]
 name = "itertools"
-version = "0.11.0"
+version = "0.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b1c173a5686ce8bfa551b3563d0c2170bf24ca44da99c7ca4bfdab5418c3fe57"
+checksum = "ba291022dbbd398a455acf126c1e341954079855bc60dfdda641363bd6922569"
 dependencies = [
  "either",
 ]
@@ -2304,7 +2304,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7f4c021e1093a56626774e81216a4ce732a735e5bad4868a03f3ed65ca0c3919"
 dependencies = [
  "once_cell",
- "toml_edit",
+ "toml_edit 0.19.14",
 ]
 
 [[package]]
@@ -2582,7 +2582,7 @@ dependencies = [
 [[package]]
 name = "rust-i18n"
 version = "2.0.1-x"
-source = "git+https://github.com/acard0/rust-i18n?rev=1709ddd#1709dddd7ca2fc7cce27a5f76ee7dd54bab9b7c0"
+source = "git+https://github.com/acard0/rust-i18n?rev=92cfa03#92cfa0325cfb4c24f09559e2ea364434286d1b75"
 dependencies = [
  "anyhow",
  "clap",
@@ -2592,17 +2592,18 @@ dependencies = [
  "quote 1.0.29",
  "regex",
  "rust-i18n-extract",
- "rust-i18n-macro",
+ "rust-i18n-macros",
  "rust-i18n-support",
  "serde",
  "serde_derive",
- "toml 0.7.6",
+ "thiserror",
+ "toml 0.8.2",
 ]
 
 [[package]]
 name = "rust-i18n-extract"
 version = "2.0.0"
-source = "git+https://github.com/acard0/rust-i18n?rev=1709ddd#1709dddd7ca2fc7cce27a5f76ee7dd54bab9b7c0"
+source = "git+https://github.com/acard0/rust-i18n?rev=92cfa03#92cfa0325cfb4c24f09559e2ea364434286d1b75"
 dependencies = [
  "anyhow",
  "ignore",
@@ -2617,10 +2618,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "rust-i18n-macro"
+name = "rust-i18n-macros"
 version = "2.0.0"
-source = "git+https://github.com/acard0/rust-i18n?rev=1709ddd#1709dddd7ca2fc7cce27a5f76ee7dd54bab9b7c0"
+source = "git+https://github.com/acard0/rust-i18n?rev=92cfa03#92cfa0325cfb4c24f09559e2ea364434286d1b75"
 dependencies = [
+ "convert_case",
  "glob",
  "once_cell",
  "proc-macro2 1.0.63",
@@ -2636,7 +2638,7 @@ dependencies = [
 [[package]]
 name = "rust-i18n-support"
 version = "2.0.0"
-source = "git+https://github.com/acard0/rust-i18n?rev=1709ddd#1709dddd7ca2fc7cce27a5f76ee7dd54bab9b7c0"
+source = "git+https://github.com/acard0/rust-i18n?rev=92cfa03#92cfa0325cfb4c24f09559e2ea364434286d1b75"
 dependencies = [
  "globwalk",
  "once_cell",
@@ -2645,7 +2647,7 @@ dependencies = [
  "serde_json",
  "serde_yaml",
  "sys-locale",
- "toml 0.7.6",
+ "toml 0.8.2",
 ]
 
 [[package]]
@@ -3079,6 +3081,7 @@ checksum = "73473c0e59e6d5812c5dfe2a064a6444949f089e20eec9a2e5506596494e4623"
 [[package]]
 name = "struct_field"
 version = "0.1.6"
+source = "git+https://github.com/acard0/struct_field?rev=0b947e8#0b947e875d2edca7b878e8395f7ffde1e502d2ab"
 dependencies = [
  "proc-macro2 1.0.63",
  "quote 1.0.29",
@@ -3087,18 +3090,18 @@ dependencies = [
 
 [[package]]
 name = "strum"
-version = "0.25.0"
+version = "0.26.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "290d54ea6f91c969195bdbcd7442c8c2a2ba87da8bf60a7ee86a235d4bc1e125"
+checksum = "723b93e8addf9aa965ebe2d11da6d7540fa2283fcea14b3371ff055f7ba13f5f"
 dependencies = [
  "strum_macros",
 ]
 
 [[package]]
 name = "strum_macros"
-version = "0.25.1"
+version = "0.26.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6069ca09d878a33f883cc06aaa9718ede171841d3832450354410b718b097232"
+checksum = "7a3417fc93d76740d974a01654a09777cb500428cc874ca9f45edfe0c4d4cd18"
 dependencies = [
  "heck",
  "proc-macro2 1.0.63",
@@ -3367,14 +3370,14 @@ dependencies = [
 
 [[package]]
 name = "toml"
-version = "0.7.6"
+version = "0.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c17e963a819c331dcacd7ab957d80bc2b9a9c1e71c804826d2f283dd65306542"
+checksum = "185d8ab0dfbb35cf1399a6344d8484209c088f75f8f68230da55d48d95d43e3d"
 dependencies = [
  "serde",
  "serde_spanned",
  "toml_datetime",
- "toml_edit",
+ "toml_edit 0.20.2",
 ]
 
 [[package]]
@@ -3391,6 +3394,17 @@ name = "toml_edit"
 version = "0.19.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f8123f27e969974a3dfba720fdb560be359f57b44302d280ba72e76a74480e8a"
+dependencies = [
+ "indexmap 2.0.0",
+ "toml_datetime",
+ "winnow",
+]
+
+[[package]]
+name = "toml_edit"
+version = "0.20.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "396e4d48bbb2b7554c944bde63101b5ae446cff6ec4a24227428f15eb72ef338"
 dependencies = [
  "indexmap 2.0.0",
  "serde",
