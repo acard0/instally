@@ -1,8 +1,8 @@
-use std::{ops::{Deref, DerefMut}, path::{PathBuf, Path}, process::Command, collections::HashMap, sync::Arc, io::{Read, Write}};
+use std::{collections::HashMap, ffi::{c_char, CStr}, io::{Read, Write}, ops::{Deref, DerefMut}, path::{Path, PathBuf}, process::Command, sync::Arc};
 
-use crate::{http::client, helpers::{versioning::version_compare, formatter::TemplateFormat, serializer, self, workflow::{self, Workflow}}, scripting::{builder::{IJSContext, IJSRuntime}, error::IJSError}};
+use crate::{helpers::{self, formatter::TemplateFormat, serializer::{self, SerializationError}, versioning::version_compare, workflow::{self, Workflow}}, http::client, scripting::{builder::{IJSContext, IJSRuntime}, error::IJSError}};
 
-use super::{abstraction::InstallyApp, error::{WeakStructParseError, PackageUninstallError, RepositoryCrossCheckError, RepositoryFetchError, ScriptError}};
+use super::{abstraction::InstallyApp, error::{PackageUninstallError, RepositoryFetchError, ScriptError}};
 
 use directories::UserDirs;
 use rust_i18n::Backend;
@@ -33,21 +33,21 @@ impl Product{
         }
     }
 
-    pub fn read_template<P: AsRef<Path>>(path: P) -> Result<Product, WeakStructParseError> {
+    pub fn read_template<P: AsRef<Path>>(path: P) -> Result<Product, SerializationError> {
         let template: Product = serializer::from_file(path)?;
         Ok(template)
     }
 
-    pub fn read() -> Result<Product, WeakStructParseError> {
+    pub fn read() -> Result<Product, SerializationError> {
         Self::read_file(Path::new("product.xml"))
     }
 
-    pub fn read_file<P: AsRef<Path>>(path: P) -> Result<Product, WeakStructParseError> {
+    pub fn read_file<P: AsRef<Path>>(path: P) -> Result<Product, SerializationError> {
         let template: Product = serializer::from_file(path)?;
         Self::from_template(template)
     }
 
-    pub fn from_template(template: Product) -> Result<Product, WeakStructParseError> {
+    pub fn from_template(template: Product) -> Result<Product, SerializationError> {
         let formatter = template.create_formatter();
         let back_step = serializer::to_xml(&template).unwrap();
         let xml = formatter.format(&back_step);
@@ -138,7 +138,7 @@ impl Product{
         Ok(repository)
     }
 
-    pub fn dump(&self) -> Result<(), WeakStructParseError> {
+    pub fn dump(&self) -> Result<(), SerializationError> {
         let mut file = helpers::file::open_create(&self.get_path_to_self_struct_target())?;
 
         file.write_all(serializer::to_xml(self)?.as_bytes())?;
@@ -191,7 +191,7 @@ pub struct PackageDefinition {
 }
 
 impl PackageDefinition {
-    pub fn from_file<P: AsRef<Path>>(path: P) -> Result<PackageDefinition, WeakStructParseError> {
+    pub fn from_file<P: AsRef<Path>>(path: P) -> Result<PackageDefinition, SerializationError> {
         Ok(serializer::from_file(path)?)
     }
 
@@ -215,7 +215,7 @@ pub struct Package {
 }
 
 impl Package {
-    pub fn from_file<P: AsRef<Path>>(path: P) -> Result<Package, WeakStructParseError> {
+    pub fn from_file<P: AsRef<Path>>(path: P) -> Result<Package, SerializationError> {
         Ok(serializer::from_file(path)?)
     }
 
@@ -359,17 +359,17 @@ impl DerefMut for InstallitionSummary {
 }
 
 impl InstallitionSummary {
-    pub fn read() -> Result<Self, WeakStructParseError> {
+    pub fn read() -> Result<Self, SerializationError> {
         let struct_path = Path::new("instally_summary.xml");
         let summary: InstallitionSummaryInner = serializer::from_file(struct_path)?;
         Ok(InstallitionSummary { path: struct_path.to_path_buf(), inner: summary })
     }
 
-    pub fn read_or_create_target(product: &Product) -> Result<Self, WeakStructParseError> {
+    pub fn read_or_create_target(product: &Product) -> Result<Self, SerializationError> {
         Self::read_or_create(product, &std::path::PathBuf::from(&product.target_directory))
     }
 
-    pub fn read_or_create(product: &Product, base: &PathBuf) -> Result<Self, WeakStructParseError> {
+    pub fn read_or_create(product: &Product, base: &PathBuf) -> Result<Self, SerializationError> {
         let struct_path = base.join("instally_summary.xml");
 
         let mut file = match helpers::file::open(struct_path.clone()) {
@@ -404,7 +404,7 @@ impl InstallitionSummary {
             .map(|f| f.clone())
     }
     
-    pub fn cross_check(&self, packages: &[Package]) -> Result<CrossCheckSummary, RepositoryCrossCheckError> {
+    pub fn cross_check(&self, packages: &[Package]) -> Result<CrossCheckSummary, RepositoryFetchError> {
         let mut updates = vec![];
         let mut map = vec![];
         let mut not_installed = vec![];
@@ -481,7 +481,7 @@ impl InstallitionSummary {
         Err(PackageUninstallError::InstallitionNotFound)
     }
     
-    pub fn save(&mut self) -> Result<&mut Self, WeakStructParseError> {
+    pub fn save(&mut self) -> Result<&mut Self, SerializationError> {
         let mut file = helpers::file::open_create(self.path.clone())?;
         file.write_all(serializer::to_xml(&self.inner)?.as_bytes())?;
         Ok(self)
@@ -555,7 +555,7 @@ impl rust_i18n::Backend for I18n {
     }
 
     fn translate(&self, locale: &str, key: &str) -> Option<String> {
-        return self.trs.lock().get(locale)?.get(key).cloned();
+        self.trs.lock().get(locale)?.get(key).cloned()
     }
 
     fn add(&mut self, locale: &str, key: &str, value: &str) {

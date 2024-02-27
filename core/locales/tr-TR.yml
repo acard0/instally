@@ -31,57 +31,84 @@ open: Aç
 
 ### errors
 repository-fetch-error:
-  network-error: "Ağ sorunu nedeniyle uzak depo alınamadı."
-  parse-error: "Depo zayıf yapısı ayrıştırılamadı."
-
-weak-struct-parse-error:
-  io-error:
-    permission-denied: "Dosyadan zayıf yapı yüklenemedi."
-    permission-denied.suggestion: "Programı yönetici olarak çalıştırmayı deneyin."
-  parse-error: "Dosyadan yüklenen zayıf yapı ayrıştırılamadı."
+  http-stream:
+    network: "Uzak depo bilgisi alınırken bir ağ hatası oluştu."
+    content-length: "Uzak depo bilgisi alınırken bir ağ hatası oluştu."
+    pull-to-file:
+      permission-denied: "Uzak depo bilgisi ağ üzerinden diske kayıt edilirken bir dosya erişim izni rededildi."
+      permission-denied.suggestion: "Uygulamayı yönetici olarak çalıştırmayı dene."
+    pull-to-string-utf8: "Uzak depo bilgisi okunurken kodek hatası oluştu"
+  serialization:
+    xml-parse: "Uzak depo bilgisi serilize edilirken bir serileştirme hatası oluştu"
+    xml-serialize: "Uzak depo bilgisi tersine serilize edilirken bir hata oluştu."
+  io:
+    permission-denied: "Uzak depo bilgisi serilize edilirken bir g/ç hatası oluştu, dosya izni rededildi."
+    permission-denied.suggestion: "Uygulamayı yönetici olarak çalıştırmayı dene."
 
 package-download-error:
-  network-error: "Paket, bir ağ sorunu nedeniyle indirilemedi."
-  io-error: "Depolama sorunu nedeniyle paket kaydedilemedi."
+  http-stream:
+    network: "Uygulama paketi indirilirken bir ağ hatası ile karşılaşıldı."
+    content-length: "Uygulama paketi indirilirken bir ağ hatası ile karşılaşıldı."
+    pull-to-file:
+      permission-denied: "Uygulama paketi ağ üzerinden diske kaydedilemedi, dosya izni rededildi."
+      permission-denied.suggestion: "Uygulamayı yönetici olarak çalıştırmayı dene."
+  io:
+    permission-denied: "Paket dosyası indirilirken bir g/ç hatası oluştu, dosya izni rededildi."
+    permission-denied.suggestion: "Uygulamayı yönetici olarak çalıştırmayı dene."
 
 script-error:
-  http-stream-error: "Script indirilirken bir sorun oluştu."
-  io-error: "Script bir dosyadan okunurken bir sorun oluştu."
-  ijs-error: "Script çalıştırılırken bir sorun oluştu."
-  other: "Belirtilmemiş bir hata oluştu."
+  http-stream:
+    network: "Kurulum için gerekli betin ağ üzerinden alınırken bir hata ile karşılaşıldı."
+    content-length: "Kurulum için gerekli betin ağ üzerinden alınırken bir hata ile karşılaşıldı."
+    pull-to-string-utf8: "Kurulum için gerekli betik ağ üzerinden alınırken bir kodek hatası ile karşılaşıldı."
+  ijs: "İş yükü için gereken betik yürütülemedi."
 
 package-install-error:
-  io-error: "Paket dosyasını okurken bir sorun oluştu."
-  archive-error: "Paket dosyası açılırken bir sorun oluştu."
-  summary-io-error: "Kurulum özeti dosyasına erişilirken bir sorun oluştu."
+  archive: "Kurulum sırasında arşiv hatası oluştu"
+  serialization:
+    xml-parse: "Kurulum sırasında paket bilgisi tercüme edilirken bir serileştirme hatası oluştu"
+    xml-serialize: "Kurulum sırasında paket bilgisi serilize edilirken bir hata oluştu."
+    io:
+      permission-denied: "Kurulum sırasında kurulum bilgisi serilize edilirken bir g/ç hatası oluştu, dosya izni rededildi."
+      permission-denied.suggestion: "Uygulamayı yönetici olarak çalıştırmayı dene."
 
 package-uninstall-error:
-  installation-not-found: "Kaldırılacak paket bulunamadı."
-  io-error: "Dosyalar kaldırılırken bir sorun oluştu."
-  summary-io-error: "Kurulum özeti dosyasına erişilirken bir sorun oluştu."
-
-repository-cross-check-error:
-  failed-to-fetch-remote-tree: "Uzak ağaç alınamadı."
-  failed-to-parse-installation-summary: "Kurulum özeti anlaşılamadı."
+  installation-not-found: "Kaldırılmak istenilen paket bulunamadı."
+  io:
+    permission-denied: "Depolama hatası nedeniyle paket dosyaları kaldırılamadı, izin rededildi."
+    permission-denied.suggestion: "Uygulamayı yönetici olarak çalıştırmayı dene."
+  serialization:
+    xml-parse: "Paket kaldırma sırasında paket bilgisi tercüme edilirken bir serileştirme hatası oluştu"
+    xml-serialize: "Paket kaldırma sırasında paket bilgisi serilize edilirken bir hata oluştu."
+    io:
+      permission-denied: "Kurulum sırasında kurulum bilgisi serilize edilirken bir g/ç hatası oluştu, dosya izni rededildi."
+      permission-denied.suggestion: "Uygulamayı yönetici olarak çalıştırmayı dene."
 
 serialization-error:
-  io: "Bir IO hatası oluştu."
-  xml: "Bir XML hatası oluştu."
+  io:
+    permission-denied: "G/Ç hatası oluştu, dosya izni rededildi."
+    permission-denied.suggestion: "Uygulamayı yönetici olarak çalıştırmayı dene."
+  xml-parse: "XML metnini sağlam bir yapıya ayrıştırma başarısız oldu."
+  xml-serialize: "Sağlam bir yapıyı XML metnine serileştirme başarısız oldu."
 
 app-entry-error:
-  os-error: "OS hatası nedeniyle uygulama girişi değiştirilemedi."
-  io-error: "IO hatası nedeniyle uygulama girişi değiştirilemedi."
+  os: "Uygulama kurulum bilgisi yönetilemedi, bir işletim sistemi hatası oluştu."
+  io:
+    permission-denied: "G/Ç hatası oluştu, dosya izni rededildi."
+    permission-denied.suggestion: "Uygulamayı yönetici olarak çalıştırmayı dene."
 
 symlink-error:
-  os-error: "OS hatası nedeniyle sembolik bağlantı oluşturulamadı."
-  io-error: "IO hatası nedeniyle sembolik bağlantı oluşturulamadı."
+  os: "Kısayol girişi yönetilemedi, bir işletim sistemi hatası oluştu."
+  io:
+    permission-denied: "Kısayol girişi bir G/Ç hatası nedeniyle yönetilemedi, dosya izni rededildi."
+    permission-denied.suggestion: "Uygulamayı yönetici olarak çalıştırmayı dene."
 
 os-error:
-  other: "Belirtilmemiş bir OS hatası oluştu."
+  other: "İşletim sistemi hatası oluştu."
 
 ijs-error:
-  other: "Belirtilmemiş bir JavaScript motoru hatası oluştu."
+  execution: "JavaScript motoru hatası oluştu."
 
-io-error: "Dosya hatası"
-io-error.permission-denied: "Dosya erişim isteği rededildi."
-io-error.permission-denied.suggestion: "Programı yönetici olarak çalıştırmayı dene."
+io-error: "G/Ç hatası"
+io-error.permission-denied: Bir dosya/yola erişim izni reddedildi.
+io-error.permission-denied.suggestion: Lütfen uygulamayı yönetici ayrıcalıklarıyla başlatın.

@@ -31,57 +31,84 @@ open: Open
 
 ### errors
 repository-fetch-error:
-  network-error: "Could not retrieve the remote repository due to a network issue."
-  parse-error: "Could not parse repository weak structure."
-
-weak-struct-parse-error:
-  io-error: 
-    permission-denied: "Permission denied while accessing to a file/path."
-    permission-denied.suggestion: "Please start the application with administrator privileges."
-  parse-error: "Could not parse weak structure loaded from file."
+  http-stream:
+    network: "A network error accured while fetching repository information."
+    content-length: "A network error accured while fetching repository information."
+    pull-to-file:
+      permission-denied: "Permission was denied when trying to save repository information from the network to disk."
+      permission-denied.suggestion: "Try running the application as an administrator."
+    pull-to-string-utf8: "An encoding error occurred while reading repository information."
+  serialization:
+    xml-parse: "A serialization error accured while serializing repository information."
+    xml-serialize: "A serialization error accured while deserializing repository information."
+  io:
+    permission-denied: "An I/O error while serializing repository information, permission denied."
+    permission-denied.suggestion: "Try running the application as an administrator."
 
 package-download-error:
-  network-error: "Could not download the package due to a network issue."
-  io-error: "Unable to save the package due to a storage issue."
+  http-stream:
+    network: "An error occurred while downloading the application package over the network."
+    content-length: "An error occurred while downloading the application package over the network."
+    pull-to-file:
+      permission-denied: "The application package could not be saved to disk from the network, permission denied."
+      permission-denied.suggestion: "Try running the application as an administrator."
+  io:
+    permission-denied: "There was an I/O error while downloading package file, permission denied."
+    permission-denied.suggestion: "Try running the application as an administrator."
 
 script-error:
-  http-stream-error: "A problem occurred during the script download."
-  io-error: "An issue arose while reading the script from a file."
-  ijs-error: "There was trouble running the script."
-  other: "An unspecified error occurred."
+  http-stream:
+    network: "An error occurred while fetching the necessary script over the network for installation."
+    content-length: "An error occurred while fetching the necessary script over the network for installation."
+    pull-to-string-utf8: "An encoding error occurred while fetching the necessary script over the network for installation."
+  ijs: "The script required for the workload could not be executed."
 
 package-install-error:
-  io-error: "A problem occurred while reading the package file."
-  archive-error: "An issue arose while unpacking the package file."
-  summary-io-error: "There was trouble accessing the installation summary file."
+  archive: "An archive error occurred during installation."
+  serialization:
+    xml-parse: "An error occurred while parsing package information during installation."
+    xml-serialize: "An error occurred while serializing package information during installation."
+    io:
+      permission-denied: "An I/O error occurred while serializing installation information, permission denied."
+      permission-denied.suggestion: "Try running the application as an administrator."
 
 package-uninstall-error:
-  installation-not-found: "The package for uninstallation is not found."
-  io-error: "An issue occurred while removing files."
-  summary-io-error: "There was trouble accessing the installation summary file."
-
-repository-cross-check-error:
-  failed-to-fetch-remote-tree: "Could not retrieve the remote tree."
-  failed-to-parse-installation-summary: "There was trouble understanding the installation summary."
+  installation-not-found: "The package to be uninstalled was not found."
+  io: 
+    permission-denied: "Package files could not be removed due to storage errors, permission denied."
+    permission-denied.suggestion: "Try running the application as an administrator."
+  serialization:
+    xml-parse: "An error occurred while parsing package information during uninstallation."
+    xml-serialize: "An error occurred while serializing package information during uninstallation."
+    io:
+      permission-denied: "An I/O error occurred while serializing uninstallation information, permission denied."
+      permission-denied.suggestion: "Try running the application as an administrator."
 
 serialization-error:
-  io: "An IO error occurred."
-  xml: "An XML error occurred."
+  io:
+    permission-denied: "An I/O error occurred, permission denied."
+    permission-denied.suggestion: "Try running the application as an administrator."
+  xml-parse: "Failed to parse XML text into a valid structure."
+  xml-serialize: "Failed to serialize a valid structure into XML text."
 
 app-entry-error:
-  os-error: "Failed to modify the application entry due to an OS error."
-  io-error: "Failed to modify the application entry due to an IO error."
+  os: "Failed to manage application entry information, an operating system error occurred."
+  io:
+    permission-denied: "An I/O error occurred, permission denied."
+    permission-denied.suggestion: "Try running the application as an administrator."
 
 symlink-error:
-  os-error: "Failed to create the symlink due to an OS error."
-  io-error: "Failed to create the symlink due to an IO error."
+  os: "Failed to manage symlink entry, an operating system error occurred."
+  io:
+    permission-denied: "Failed to manage symlink entry due to an I/O error, permission denied."
+    permission-denied.suggestion: "Try running the application as an administrator."
 
 os-error:
-  other: "An unspecified OS error occurred."
+  other: "An operating system error occurred."
 
 ijs-error:
-  other: "An unspecified JavaScript engine error occurred."
+  execution: "JavaScript engine encountered an error."
 
-io-error: "IO error"
-io-error.permission-denied: Permission denied while accessing to a file/path.
-io-error.permission-denied.suggestion: Please start the application with administrator privileges.
+io-error: "I/O error"
+io-error.permission-denied: "Access permission denied to a file/path."
+io-error.permission-denied.suggestion: "Please run the application with administrator privileges."

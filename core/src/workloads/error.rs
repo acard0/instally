@@ -1,78 +1,53 @@
+use crate::*;
+use crate::{http::client::HttpStreamError, scripting::error::IJSError, helpers::serializer::SerializationError};
 
-use crate::{http::client::HttpStreamError, scripting::error::IJSError, helpers::serializer::{SerializationError, self}};
-use crate::{*, error::*};
+use rust_i18n::error::*;
+use convert_case::*;
 
-#[derive(thiserror::Error, struct_field::AsDetails, strum::AsRefStr, Debug)]
+#[derive(thiserror::Error, rust_i18n::AsDetails, strum::AsRefStr, Debug)]
 pub enum RepositoryFetchError {
-    #[error("{}", .0.get_message_key())]
-    NetworkError(#[from] HttpStreamError),
+    #[error("http-stream.{}", .0.get_display_key())]
+    HttpStream(#[from] HttpStreamError),
 
-    #[error("{}", .0.get_message_key())]
-    ParseError(#[from] serializer::SerializationError),
+    #[error("serialization.{}", .0.get_display_key())]
+    Serialization(#[from] SerializationError),
 }
 
-#[derive(thiserror::Error, struct_field::AsDetails, strum::AsRefStr, Debug)]
-pub enum WeakStructParseError {
-    #[error("{}", .0.get_message_key())]
-    IOError(#[from] std::io::Error),
-    
-    #[error("{}", .0.get_message_key())]
-    ParseError(#[from] SerializationError)
-}   
-
-#[derive(thiserror::Error, struct_field::AsDetails, strum::AsRefStr, Debug)]
+#[derive(thiserror::Error, rust_i18n::AsDetails, strum::AsRefStr, Debug)]
 pub enum PackageDownloadError {
-    #[error("{}", .0.get_message_key())]
-    NetworkError(#[from] HttpStreamError),
+    #[error("http-stream.{}", .0.get_display_key())]
+    HttpStream(#[from] HttpStreamError),
 
-    #[error("{}", .0.get_message_key())]
-    IOError(#[from] std::io::Error)
+    #[error("io.{}", .0.kind().to_string().to_case(Case::Kebab))]
+    Io(#[from] std::io::Error),
 }
 
-#[derive(thiserror::Error, struct_field::AsDetails, strum::AsRefStr, Debug)]
+#[derive(thiserror::Error, rust_i18n::AsDetails, strum::AsRefStr, Debug)]
 pub enum ScriptError {
-    #[error("{}", .0.get_message_key())]
-    HttpStreamError(#[from] HttpStreamError),
+    #[error("http-stream.{}", .0.get_display_key())]
+    HttpStream(#[from] HttpStreamError),
 
-    #[error("{}", .0.get_message_key())]
-    IOError(#[from] std::io::Error),
-
-    #[error("{}", .0.get_message_key())]
-    IJSError(#[from] IJSError),
-
-    #[error("{0}")]
-    Other(String)
+    #[error("ijs.{}", .0.get_display_key())]
+    IJS(#[from] IJSError),
 }
 
-#[derive(thiserror::Error, struct_field::AsDetails, strum::AsRefStr, Debug)]
+#[derive(thiserror::Error, rust_i18n::AsDetails, strum::AsRefStr, Debug)]
 pub enum PackageInstallError {
-    #[error("{}", .0.as_details())]
-    IOError(#[from] std::io::Error),
-
-    #[error("archive-error")]
-    ArchiveError(#[from] zip::result::ZipError),
+    #[error("archive")]
+    Archive(#[from] zip::result::ZipError),
     
-    #[error("{}", .0.as_details())]
-    SummaryIOError(#[from] WeakStructParseError)
+    #[error("serialization.{}", .0.get_display_key())]
+    Serialization(#[from] SerializationError)
 }
 
-#[derive(thiserror::Error, struct_field::AsDetails, strum::AsRefStr, Debug)]
+#[derive(thiserror::Error, rust_i18n::AsDetails, strum::AsRefStr, Debug)]
 pub enum PackageUninstallError {
     #[error("installition-not-found")]
     InstallitionNotFound,
 
-    #[error("{}", .0.as_details())]
-    IOError(#[from] std::io::Error),
+    #[error("io.{}", .0.kind().to_string().to_case(Case::Kebab))]
+    Io(#[from] std::io::Error),
 
-    #[error("{}", .0.as_details())]
-    SummaryIOError(#[from] WeakStructParseError)
-}
-
-#[derive(thiserror::Error, struct_field::AsDetails, strum::AsRefStr, Debug)]
-pub enum RepositoryCrossCheckError {
-    #[error("{}", .0.as_details())]
-    FailedToFetchRemoteTree(#[from] RepositoryFetchError),
-
-    #[error("{}", .0.as_details())]
-    FailedToParseInstallitionSummary(#[from] WeakStructParseError)
+    #[error("serialization.{}", .0.get_display_key())]
+    Serialization(#[from] SerializationError),
 }

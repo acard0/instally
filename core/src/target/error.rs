@@ -1,27 +1,28 @@
 
-use std::io;
-use crate::{*, error::*};
+use rust_i18n::error::*;
+use convert_case::*;
+use crate::*;
 
-#[derive(thiserror::Error, struct_field::AsDetails, strum::AsRefStr, Debug)]
+#[derive(thiserror::Error, rust_i18n::AsDetails, strum::AsRefStr, Debug)]
 pub enum AppEntryError {
-    #[error("{}", .0.get_message_key())]
-    OsError(#[from] OsError),
+    #[error("os.{}", .0.get_display_key())]
+    Os(#[from] OsError),
 
-    #[error("{}", .0.get_message_key())]
-    IoError(#[from] io::Error)
+    #[error("io.{}", .0.kind().to_string().to_case(Case::Kebab))]
+    Io(#[from] std::io::Error)
 }
 
-#[derive(thiserror::Error, struct_field::AsDetails, strum::AsRefStr, Debug)]
+#[derive(thiserror::Error, rust_i18n::AsDetails, strum::AsRefStr, Debug)]
 pub enum SymlinkError {
-    #[error("{}", .0.get_message_key())]
-    OsError(#[from] OsError),
+    #[error("os.{}", .0.get_display_key())]
+    Os(#[from] OsError),
 
-    #[error("{}", .0.get_message_key())]
-    IoError(#[from] io::Error)
+    #[error("io.{}", .0.kind().to_string().to_case(Case::Kebab))]
+    Io(#[from] std::io::Error)
 }
 
-#[derive(thiserror::Error, struct_field::AsDetails, strum::AsRefStr, Debug)]
+#[derive(thiserror::Error, rust_i18n::AsDetails, strum::AsRefStr, Debug)]
 pub enum OsError {
-    #[error("{0}")]
+    #[error("other")]
     Other(String)
 }

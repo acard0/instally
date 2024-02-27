@@ -1,11 +1,12 @@
 
-use std::fmt::{Display, Formatter};
+use std::{fmt::{Display, Formatter}, io::ErrorKind};
 
-use crate::{*, error::{Error, ErrorDetails}};
+use crate::{helpers::file, *, workloads::error::*};
 
-use super::{definitions::*, abstraction::*};
+use super::{abstraction::*, definitions::*};
 
 use async_trait::async_trait;
+use rust_i18n::error::{Error, ErrorDetails};
 
 pub type InstallerWrapper = AppWrapper<InstallerOptions>;
 
@@ -32,7 +33,8 @@ impl Workload for InstallerWrapper {
         self.app.set_workload_state(InstallerWorkloadState::FetchingRemoteTree(self.app.get_product().name.clone()));     
         let repository = self.app.get_repository();
 
-        std::fs::create_dir_all(&self.app.get_product().get_relative_target_directory())?;
+        file::create_dir_all(&self.app.get_product().get_relative_target_directory())
+            .map_err(|err| file::IoError::from(err.kind()))?;
 
         // api uses product weak struct, resolves it from filesystem
         self.app.get_product().dump()?;
@@ -72,7 +74,8 @@ impl Workload for InstallerWrapper {
         // or via maintinancetool
         if std::env::var("STANDALONE_EXECUTION").is_ok() {
             self.app.create_app_entry(&self.app, "maintenancetool")?;
-            self.app.create_maintenance_tool(&self.app, "maintenancetool")?;
+            self.app.create_maintenance_tool(&self.app, "maintenancetool")
+                .map_err(|err| file::IoError::from(err.kind()))?;
         }
 
         global.if_exist(|s| Ok(s.invoke_after_installition()))?;

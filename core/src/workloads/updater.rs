@@ -4,8 +4,9 @@ use std::fmt::{Formatter, Display};
 use super::{definitions::*, abstraction::*};
 
 use async_trait::async_trait;
+use rust_i18n::error::{Error, ErrorDetails};
 
-use crate::{*, error::{Error, ErrorDetails}};
+use crate::*;
 
 pub type UpdaterWrapper = AppWrapper<UpdaterOptions>;
 

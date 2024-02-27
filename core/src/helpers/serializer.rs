@@ -1,15 +1,20 @@
 use std::path::Path;
 
 use serde::Deserialize;
-use crate::{*, error::*};
+use rust_i18n::error::*;
+use convert_case::*;
+use crate::*;
 
-#[derive(thiserror::Error, struct_field::AsDetails, strum::AsRefStr, Debug)]
+#[derive(thiserror::Error, rust_i18n::AsDetails, strum::AsRefStr, Debug)]
 pub enum SerializationError {
-    #[error("{}", .0.get_message_key())]
+    #[error("io.{}", .0.kind().to_string().to_case(Case::Kebab))]
     Io(#[from] std::io::Error),
 
-    #[error("deserialization-error")]
-    Xml(#[from] quick_xml::DeError),
+    #[error("xml-parse")]
+    XmlParse(#[from] quick_xml::DeError),
+
+    #[error("xml-serialize")]
+    XmlSerialize(#[from] quick_xml::Error),
 }
 
 pub fn to_xml<T>(value: &T) -> Result<String, SerializationError>

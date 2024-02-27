@@ -104,13 +104,13 @@ impl IJSContext {
             let globals = ctx.globals();
             globals.get::<_, InstallerJ>("Installer")
         }).wait()
-        .map_err(|err| IJSError::Other(format!("{err:?}")))
+        .map_err(|err| IJSError::Execution(format!("{err:?}")))
     }
  
     pub fn mount(&self, src: &str) -> Result<(), IJSError> {
         self.eval_raw(src)?;
         self.eval_raw::<()>("mounted();")
-            .map_err(|err| IJSError::Other(format!("Failed to mount given script. It has to contain 'mounted' function. {err:?}")))
+            .map_err(|err| IJSError::Execution(format!("Failed to mount given script. It has to contain 'mounted' function. {err:?}")))
     }
 
     pub fn try_eval<V: for<'js> FromJs<'js> + 'static>(&self, src: &str) -> Result<V, IJSError> {
@@ -149,13 +149,13 @@ impl IJSContext {
             promise.await.catch(ctx)
                 .map_err(|err| format!("{err:?}"))
         }).wait() // could use parallel feature of rquickjs but it causes whole a lot of other problems
-        .map_err(|err| IJSError::Other(err)) 
+        .map_err(|err| IJSError::Execution(err)) 
     }
 
     pub fn eval_raw<V: for<'js> FromJs<'js> + 'static>(&self, src: &str) -> Result<V, IJSError> { 
         async_with!(self.get_context() => |ctx| {
             ctx.eval(src).catch(ctx)
-                .map_err(|err| IJSError::Other(format!("{err:?}")))
+                .map_err(|err| IJSError::Execution(format!("{err:?}")))
         }).wait()
     }
 

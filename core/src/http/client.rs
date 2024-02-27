@@ -3,21 +3,23 @@ use futures::StreamExt;
 use std::{fs::File, cmp::min, io::Write};
 use bytes::Bytes;
 
-use crate::{*, error::*};
+use rust_i18n::error::*;
+use convert_case::*;
+use crate::*;
 
-#[derive(thiserror::Error, struct_field::AsDetails, strum::AsRefStr, Debug)]
+#[derive(thiserror::Error, rust_i18n::AsDetails, strum::AsRefStr, Debug)]
 pub enum HttpStreamError {
-    #[error("network-error")]
-    NetworkError(#[from] reqwest::Error),
+    #[error("network")]
+    Network(#[from] reqwest::Error),
 
-    #[error("content-length-error")]
-    ContentLengthError,
+    #[error("content-length")]
+    ContentLength,
 
-    #[error("{}", .0.get_message_key())]
-    PullToFileError(#[from] std::io::Error),
+    #[error("pull-to-file.{}", .0.kind().to_string().to_case(Case::Kebab))]
+    PullToFile(#[from] std::io::Error),
 
-    #[error("pull-to-string-utf8-error")]
-    PullToStringError(#[from] std::string::FromUtf8Error)
+    #[error("pull-to-string-utf8")]
+    PullToString(#[from] std::string::FromUtf8Error)
 }
 
 pub async fn test() -> Result<String, HttpStreamError> {
@@ -45,7 +47,7 @@ where
 
     let total_size = match response.content_length() {
         Some(r) => r,
-        _ => Err(HttpStreamError::ContentLengthError)?
+        _ => Err(HttpStreamError::ContentLength)?
     };
 
     let mut downloaded: u64 = 0;
@@ -70,7 +72,7 @@ where
 {
     download(url, progress_callback, move |chunk| {
         file.write_all(&chunk).or_else(|err| {
-            Err(HttpStreamError::PullToFileError(err))?
+            Err(HttpStreamError::PullToFile(err))?
         })
     }).await
 }

@@ -1,8 +1,10 @@
 
-use crate::{*, error::*};
+use rust_i18n::error::*;
+use convert_case::*;
+use crate::*;
 
-#[derive(thiserror::Error, struct_field::AsDetails, strum::AsRefStr, Debug)]
+#[derive(thiserror::Error, rust_i18n::AsDetails, strum::AsRefStr, Debug)]
 pub enum IJSError {
-    #[error("{0}")]
-    Other(String),
+    #[error("execution")]
+    Execution(String),
 }

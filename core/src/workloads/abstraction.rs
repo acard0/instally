@@ -1,10 +1,11 @@
-use std::{sync::Arc, collections::HashMap, fmt::{Display, Formatter}, path::Path};
+use std::{collections::HashMap, fmt::{Display, Formatter}, path::Path, sync::Arc};
 
 use async_trait::async_trait;
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
+use rust_i18n::error::{Error, ErrorDetails};
 
-use crate::{http::client::{self, HttpStreamError}, archiving, target::error::{SymlinkError, AppEntryError}, helpers::{tmp, workflow::{self, Workflow}}, error::{Error, ErrorDetails}};
+use crate::{archiving, helpers::{serializer::SerializationError, tmp, workflow::{self, Workflow}}, http::client::{self, HttpStreamError}, target::error::{AppEntryError, SymlinkError}};
 
 use super::{definitions::*, error::*};
 
@@ -256,7 +257,7 @@ impl InstallyApp
         client::get_text(url, progress_closure).await
     }
 
-    pub fn get_installition_summary(&self) -> Result<InstallitionSummary, WeakStructParseError> {
+    pub fn get_installition_summary(&self) -> Result<InstallitionSummary, SerializationError> {
         match workflow::get_workflow() {
             Workflow::FreshInstallition => {
                 InstallitionSummary::read_or_create_target(&self.product)
@@ -275,8 +276,8 @@ impl InstallyApp
         crate::sys::create_app_entry(app, maintenance_tool_name)
     }
 
-    pub fn create_maintenance_tool(&self, app: &InstallyApp, maintenance_tool_name: &str) -> Result<(), std::io::Error> {
-        Ok(crate::sys::create_maintenance_tool(app, maintenance_tool_name)?)
+    pub fn create_maintenance_tool(&self, app: &InstallyApp, maintenance_tool_name: &str) -> std::io::Result<()> {
+        crate::sys::create_maintenance_tool(app, maintenance_tool_name)
     }
 
     pub fn create_progress_closure(&self) -> Box<dyn Fn(f32) + Send> {

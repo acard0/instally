@@ -1,8 +1,9 @@
 use std::{fmt::{Formatter, Display}, cell::RefCell};
 
 use async_trait::async_trait;
+use rust_i18n::error::{Error, ErrorDetails};
 
-use crate::{workloads::definitions::PackageScriptOptional, extensions::future::FutureSyncExt, *, error::{Error, ErrorDetails}};
+use crate::{workloads::definitions::PackageScriptOptional, extensions::future::FutureSyncExt, *};
 
 use super::{definitions::*, abstraction::*};
 
@@ -107,7 +108,7 @@ impl Display for UninstallerWorkloadState {
             },
 
             UninstallerWorkloadState::Interrupted(e) => {
-                write!(f, "{:?}", t!("states.interrupted.by-error", [e.to_string()]))
+                write!(f, "{:?}", t!("states.interrupted.by", [e.to_string()]))
             },
 
             _ => write!(f, "{:?}", t!("states.completed"))
