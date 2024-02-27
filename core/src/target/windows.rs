@@ -16,6 +16,7 @@ use winreg::RegKey;
 
 use std::path::Path;
 
+use crate::helpers::file;
 use crate::helpers::like::CStringLike;
 use crate::workloads::abstraction::InstallyApp;
 use crate::workloads::definitions::Product;
@@ -78,7 +79,7 @@ pub fn create_app_entry(app: &InstallyApp, maintenance_tool_name: &str) -> Resul
 pub fn create_maintenance_tool(app: &InstallyApp, maintenance_tool_name: &str) -> std::io::Result<()> {
     let exec_path = std::env::current_exe().unwrap();
     let copy_path = std::path::Path::new(&app.get_product().get_relative_target_directory()).join(format!("{}.exe", maintenance_tool_name));
-    _ = std::fs::copy(exec_path, copy_path)?;
+    _ = file::copy(exec_path, copy_path)?;
     Ok(())
 }
 
@@ -141,13 +142,13 @@ impl GlobalConfigImpl for GlobalConfig {
 /// //////
 impl std::convert::From<windows::core::Error> for SymlinkError {
     fn from(value: windows::core::Error) -> Self {
-        SymlinkError::OsError(value.into())
+        SymlinkError::Os(value.into())
     }
 }
 
 impl std::convert::From<windows::core::Error> for AppEntryError {
     fn from(value: windows::core::Error) -> Self {
-        AppEntryError::OsError(value.into())
+        AppEntryError::Os(value.into())
     }
 }
 

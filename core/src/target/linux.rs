@@ -13,7 +13,7 @@ pub fn create_app_entry(app: &InstallyApp, maintenance_tool_name: &str) -> Resul
     unimplemented!() 
 }
 
-pub fn create_maintenance_tool(app: &InstallyApp, maintenance_tool_name: &str) -> std::io::Result<()> {
+pub fn create_maintenance_tool(app: &InstallyApp, maintenance_tool_name: &str) -> Result<(), IoError> {
     unimplemented!() 
 }
 
