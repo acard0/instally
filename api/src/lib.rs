@@ -6,9 +6,7 @@ mod ffi;
 use std::sync::atomic::AtomicBool;
 
 use ffi::{CallResult, CPackageVersioning, CAppState};
-use instally_core::{self, workloads::{updater::UpdaterOptions, abstraction::AppContextNotifiable, uninstaller::UninstallerOptions, definitions::{InstallitionSummary, Repository, Product, Package}, installer::InstallerOptions}, factory::{WorkloadType, self}, extensions::future::FutureSyncExt};
-
-use crate::ffi::ByteBuffer;
+use instally_core::{self, extensions::future::FutureSyncExt, factory::{self, WorkloadType}, workloads::{abstraction::AppContextNotifiable, definitions::{ByteBuffer, InstallitionSummary, Package, Product, Repository}, installer::InstallerOptions, uninstaller::UninstallerOptions, updater::UpdaterOptions}};
 
 static ON_WORK: AtomicBool = std::sync::atomic::AtomicBool::new(false);
 
