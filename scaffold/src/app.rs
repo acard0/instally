@@ -1,9 +1,11 @@
+#![allow(dead_code, unused_variables)]
 
 use std::process;
 
 use eframe::{egui, epaint::pos2};
 use egui::ProgressBar;
-use instally_core::{workloads::abstraction::{InstallyApp, WorkloadResult}, *};
+
+use instally_core::*;
 
 pub struct AppWrapper {
     app: InstallyApp,
@@ -11,6 +13,7 @@ pub struct AppWrapper {
 
 impl AppWrapper {
     pub fn new(app: InstallyApp) -> AppWrapper {
+
         AppWrapper { app }
     }
 }
@@ -32,13 +35,19 @@ impl eframe::App for AppWrapper{
                                 ui.label(t!("states.completed"));
                             },
                             WorkloadResult::Error(e) => {
+
                                 ui.label(e.message);
+
                                 match e.suggestion {
                                     Some(s) => {
                                         ui.label(s);
                                     },
                                     None => {}
                                 }
+
+                                ui.add_space(15.0);
+                                ui.label(format!("{}: {}", t!("code"), e.fullname));
+                                ui.add_space(25.0);
                             },
                         }
 
@@ -69,6 +78,7 @@ impl eframe::App for AppWrapper{
                 let button = ui.button(t!(if state.is_completed() { "ok" } else { "abort" }));
 
                 if button.clicked() {
+                    
                     process::exit(1);
                 }
 
@@ -166,6 +176,9 @@ fn custom_window_frame(
 // catppuccin-egui = "3.0.0"
 
 use egui::{epaint, style, Color32};
+use instally_core::definitions::app::InstallyApp;
+use instally_core::workloads::workload::WorkloadResult;
+use rust_i18n::t;
 
 /// Apply the given theme to a [`Context`](egui::Context).
 fn set_theme(ctx: &egui::Context, theme: Theme) {

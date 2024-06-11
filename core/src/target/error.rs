@@ -1,4 +1,5 @@
 
+use helpers::file::IoError;
 use rust_i18n::error::*;
 use convert_case::*;
 use crate::*;
@@ -17,8 +18,8 @@ pub enum SymlinkError {
     #[error("os.{}", .0.get_display_key())]
     Os(#[from] OsError),
 
-    #[error("io.{}", .0.kind().to_string().to_case(Case::Kebab))]
-    Io(#[from] std::io::Error)
+    #[error("io.{}", .0.get_display_key())]
+    Io(#[from] IoError),
 }
 
 #[derive(thiserror::Error, rust_i18n::AsDetails, strum::AsRefStr, Debug)]

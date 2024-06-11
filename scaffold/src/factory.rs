@@ -1,10 +1,10 @@
 
 use eframe::egui;
-use instally_core::{factory::{WorkloadType, Executor}, workloads::{abstraction::InstallyApp, definitions::Product}};
+use instally_core::{definitions::app::InstallyApp, factory::{Executor, WorkloadKind}, workloads::noop::NoopOptions};
 
-pub fn run(product_meta: &Product, settings: WorkloadType, do_spawn_ui: bool) -> Executor {
+pub fn run(app: InstallyApp, settings: WorkloadKind, do_spawn_ui: bool) -> Executor {
     let executor = instally_core::factory::run(
-        product_meta,
+        app,
         settings
     );
     
@@ -15,6 +15,10 @@ pub fn run(product_meta: &Product, settings: WorkloadType, do_spawn_ui: bool) ->
     executor
 }
 
+pub fn failed(err: rust_i18n::error::Error) -> Executor {
+    run(InstallyApp::default(), WorkloadKind::Error(NoopOptions::default(), err.get_details().clone()), true)
+}
+
 pub fn spawn_ui(ctx: InstallyApp) {
 
     // build native opts
@@ -23,8 +27,8 @@ pub fn spawn_ui(ctx: InstallyApp) {
         decorated: false,
         // To have rounded corners we need transparency:
         transparent: true,
-        min_window_size: Some(egui::vec2(450.0, 150.0)),
-        initial_window_size: Some(egui::vec2(450.0, 150.0)),
+        min_window_size: Some(egui::vec2(450.0, 175.0)),
+        initial_window_size: Some(egui::vec2(450.0, 175.0)),
         centered: true,
         ..Default::default()
     };

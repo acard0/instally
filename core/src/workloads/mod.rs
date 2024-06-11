@@ -1,8 +1,8 @@
-pub mod abstraction;
-pub mod definitions;
+pub mod operations;
+
+pub mod workload;
 
 pub mod installer;
 pub mod uninstaller;
 pub mod updater;
-
-pub mod error;
+pub mod noop;

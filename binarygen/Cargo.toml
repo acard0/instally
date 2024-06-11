@@ -8,6 +8,6 @@ edition = "2021"
 [dependencies]
 instally-core = { path = "../core" }
 serde = { version = "1.0.177", features = ["derive"] }
-quick-xml = { version = "0.30.0", features = ["serialize"] }
+serde_json = "1"
 patternscan = "1.2.0"
 clap = { version = "4.3.19", features = ["derive"] }

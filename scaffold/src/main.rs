@@ -3,7 +3,7 @@
 
 use core::panic;
 
-use instally_core::{workloads::{uninstaller::UninstallerOptions, updater::UpdaterOptions, definitions::{Product, InstallitionSummary}, installer::InstallerOptions}, factory::WorkloadType, helpers::serializer};
+use instally_core::{definitions::{app::InstallyApp, product::Product}, factory::WorkloadKind, helpers::serializer, workloads::{installer::InstallerOptions, uninstaller::UninstallerOptions, updater::UpdaterOptions}};
 
 mod factory;
 mod app;
@@ -14,12 +14,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     std::env::set_var("RUST_LOG", rust_log);  
     env_logger::init();
 
-    let template_result = quick_xml::de::from_str(PAYLOAD.strip_prefix("###/PAYLOAD/###").unwrap());
+    let template_result: Result<Product, serializer::SerializationError> = serializer::from_json(PAYLOAD.strip_prefix("###/PAYLOAD/###").unwrap());
     let product = match template_result {
         Ok(template) => {
-            log::info!("Payload Product is valid. Using it.");
+            log::info!("Payload meta for '{}' is valid. Using it.", &template.name);
             Product::from_template(template)
-                .map_err(|err| format!("Failed to create product from template: {}", err))?
+                .map_err(|err| format!("Failed to format product from template: {:?}", err))?
         },
         Err(_) => {
             #[cfg(not(debug_assertions))]
@@ -31,59 +31,30 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             log::info!("Payload Product is not valid and we are in debug env. Using dummy product for testing.");
             Product::from_template(
                 Product::new(
-                    "Wulite",
+                    "Wulite Beta",
                     "@{App.Name}",
                     "liteware.io",
                     "https://liteware.io",
-                    "https://cdn.liteware.xyz/downloads/wulite/release/",
+                    "https://cdn.liteware.xyz/downloads/wulite/beta/",
                     "global_script.js",
-                    "@{Directories.User.Home}\\AppData\\Roaming\\@{App.Publisher}\\@{App.Name}",
+                    "@{Directories.User.Home}\\AppData\\Local\\@{App.Publisher}\\@{App.Name}",
                 )
             ).unwrap()
         }
     };
 
-    let cwd_eq = std::env::current_dir().unwrap() == product.get_target_directory();
-    let summ_ok = InstallitionSummary::read().is_ok();
-    
-    if cwd_eq {
-        // existing installition & installition summary is corrupted
-        if !summ_ok {
-            log::info!("Launched at target directory but installition summary not found/is invalid. Aborting.");
-            return Ok(());
-        } else {
-            // set 'we are in maintinance mode'. installition seems valid.
-            std::env::set_var("MAINTINANCE_EXECUTION", "1");  
-            log::info!("At target directory & installition summary is present. Working as maintinance tool.");
-        }
-    // is this fresh installition or end-user moved installition folder?
+    let result = InstallyApp::build(&product).await;    
+
+    if result.is_err() {
+        _ = factory::failed(result.err().unwrap().into())
     } else {
-        // different target folder, ok...
-        if summ_ok {
-            // set 'we are in maintinance mode'. installition seems valid.
-            std::env::set_var("MAINTINANCE_EXECUTION", "1");  
-            log::warn!("Installition folder is moved & installition summary is present. Working as maintinance tool.");
-        } else {
-            // set 'we are in fresh installition mode'
-            std::env::set_var("STANDALONE_EXECUTION", "1");
-            log::info!("Fresh installition. Working as installer.");
-        }
+        let args = parse_args(result.as_ref().unwrap()).await;
+        _ = factory::run(
+            result.unwrap(),
+            args.workload_type,
+            !args.silent
+        ).handle.await;
     }
-
-    log::info!("Payload xml: {:?}", serializer::to_xml(&product));
-    log::info!("Target directory: {:?}", &product.get_relative_target_directory());
-
-    log::info!("Terminating processes under the target directory");
-    instally_core::helpers::process::terminate_processes_under_folder(&product.get_relative_target_directory())
-        .expect("Failed to terminate processes under the target directory!");
-
-    let args = parse_args(&product).await;
-    _ = factory::run(
-        &product,
-        args.workload_type,
-        !args.silent
-
-    ).handle.await;
 
     log::info!("Exit(0)");
     Ok(())
@@ -91,17 +62,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 
 struct Args {
-    workload_type: WorkloadType,
+    workload_type: WorkloadKind,
     silent: bool,
 }
 
-async fn parse_args(product: &Product) -> Args {
-    let repository = product
-        .fetch_repository().await
-        .unwrap();
-
-    let installition_summary = InstallitionSummary::read().ok();
-
+async fn parse_args(app: &InstallyApp) -> Args {
     let mut args = std::env::args();
     let mut command = None;
     let mut silent = false;
@@ -121,17 +86,16 @@ async fn parse_args(product: &Product) -> Args {
             "--silent" => silent = true,
             "--packages" => {
                 args.by_ref().take_while(|a| !a.starts_with('-')).for_each(|a| {
-                    let remote = repository.get_package(&a)
+                    let remote = app.get_repository().get_package(&a)
                         .expect(format!("Package {} not found!", &a).as_str());
 
                     target_packages.get_or_insert_with(|| Vec::new())
                         .push(remote.clone());
 
-                    if let Some(summary) = &installition_summary {
-                        if let Some(local) = summary.find(&remote) {
-                            target_local_packages.get_or_insert_with(|| Vec::new())
-                                .push(local);
-                        }
+                    let summary = app.get_summary();
+                    if let Some(local) = summary.find(&remote).cloned() {
+                        target_local_packages.get_or_insert_with(|| Vec::new())
+                            .push(local);
                     }
                 });
             },
@@ -140,15 +104,9 @@ async fn parse_args(product: &Product) -> Args {
     }
     
     let workload = match command.unwrap_or("/install".to_owned()).as_str() {
-        "/install" => WorkloadType::Installer(InstallerOptions {
-            target_packages: target_packages
-        }),
-        "/uninstall" => WorkloadType::Uninstaller(UninstallerOptions {
-            target_packages: target_local_packages
-        }),
-        "/update" => WorkloadType::Updater(UpdaterOptions {
-            target_packages: target_local_packages
-        }),
+        "/install" => WorkloadKind::Installer(InstallerOptions::new(target_packages)),
+        "/uninstall" => WorkloadKind::Uninstaller(UninstallerOptions::new(target_local_packages)),
+        "/update" => WorkloadKind::Updater(UpdaterOptions::new(target_local_packages)),
         _ => panic!("Unrecognized command!")
     };
 

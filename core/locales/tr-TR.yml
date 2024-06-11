@@ -1,26 +1,26 @@
+### messages
 messages.hello: Merhaba
-messages.hello.x: Merhaba, {0}
+messages.hello.x: Merhaba {0}
 
-states.fetching-repository: "Kaynak bilgisi getiriliyor: '{0}'"
-
+states.fetching-repository: "Uzak depo bilgisi getiriliyor: '{0}'"
 states.downloading: "İndiriliyor: '{0}'"
-states.decompressing: "Arşivden çıkartılıyor: '{0}'"
+states.decompressing: "Sıkıştırma açılıyor: '{0}'"
 states.installing: "Kuruluyor: '{0}'"
-states.compressing: "Arşivleniyor: '{0}'"
-states.deleting-files: "Dosyalar siliniyor"
+states.compressing: "Sıkıştırılıyor: '{0}'"
+states.deleting-files: Dosyalar siliniyor
 
-states.interrupted.by-error: "Hata oluştu: '{0}'"
-states.interrupted.by-user: "İptal edildi"
+states.interrupted.by: "Hata oluştu: '{0}'"
+states.interrupted.by-user: Kullanıcı tarafından iptal edildi
 
 states.completed: "Tamamlandı"
 
 ### words
-abort: İptal
+abort: İptal et
 ok: Tamam
 cancel: İptal
 yes: Evet
 no: Hayır
-retry: Yeniden dene
+retry: Tekrar Dene
 ignore: Yoksay
 skip: Atla
 next: İleri
@@ -28,87 +28,80 @@ back: Geri
 finish: Bitir
 close: Kapat
 open: Aç
+code: Kod
 
 ### errors
-repository-fetch-error:
-  http-stream:
-    network: "Uzak depo bilgisi alınırken bir ağ hatası oluştu."
-    content-length: "Uzak depo bilgisi alınırken bir ağ hatası oluştu."
-    pull-to-file:
-      permission-denied: "Uzak depo bilgisi ağ üzerinden diske kayıt edilirken bir dosya erişim izni rededildi."
-      permission-denied.suggestion: "Uygulamayı yönetici olarak çalıştırmayı dene."
-    pull-to-string-utf8: "Uzak depo bilgisi okunurken kodek hatası oluştu"
-  serialization:
-    xml-parse: "Uzak depo bilgisi serilize edilirken bir serileştirme hatası oluştu"
-    xml-serialize: "Uzak depo bilgisi tersine serilize edilirken bir hata oluştu."
-  io:
-    permission-denied: "Uzak depo bilgisi serilize edilirken bir g/ç hatası oluştu, dosya izni rededildi."
-    permission-denied.suggestion: "Uygulamayı yönetici olarak çalıştırmayı dene."
+http-stream-error:
+  network: "Bir ağ hatası oluştu."
+  network.suggestion: "İnternet bağlantınızı kontrol edin."
 
-package-download-error:
-  http-stream:
-    network: "Uygulama paketi indirilirken bir ağ hatası ile karşılaşıldı."
-    content-length: "Uygulama paketi indirilirken bir ağ hatası ile karşılaşıldı."
-    pull-to-file:
-      permission-denied: "Uygulama paketi ağ üzerinden diske kaydedilemedi, dosya izni rededildi."
-      permission-denied.suggestion: "Uygulamayı yönetici olarak çalıştırmayı dene."
-  io:
-    permission-denied: "Paket dosyası indirilirken bir g/ç hatası oluştu, dosya izni rededildi."
-    permission-denied.suggestion: "Uygulamayı yönetici olarak çalıştırmayı dene."
+  content-length: "Bir ağ hatası oluştu."
+  content-length.suggestion: "İnternet bağlantınızı kontrol edin."
 
-script-error:
-  http-stream:
-    network: "Kurulum için gerekli betin ağ üzerinden alınırken bir hata ile karşılaşıldı."
-    content-length: "Kurulum için gerekli betin ağ üzerinden alınırken bir hata ile karşılaşıldı."
-    pull-to-string-utf8: "Kurulum için gerekli betik ağ üzerinden alınırken bir kodek hatası ile karşılaşıldı."
-  ijs: "İş yükü için gereken betik yürütülemedi."
+  pull-to-file:
+    io-eror:
+      permission-denied: "Bir dosya indirilirken erişim izni reddedildi."
+      permission-denied.suggestion: "Uygulamayı yönetici olarak çalıştırmayı deneyin."
 
-package-install-error:
-  archive: "Kurulum sırasında arşiv hatası oluştu"
-  serialization:
-    xml-parse: "Kurulum sırasında paket bilgisi tercüme edilirken bir serileştirme hatası oluştu"
-    xml-serialize: "Kurulum sırasında paket bilgisi serilize edilirken bir hata oluştu."
-    io:
-      permission-denied: "Kurulum sırasında kurulum bilgisi serilize edilirken bir g/ç hatası oluştu, dosya izni rededildi."
-      permission-denied.suggestion: "Uygulamayı yönetici olarak çalıştırmayı dene."
-
-package-uninstall-error:
-  installation-not-found: "Kaldırılmak istenilen paket bulunamadı."
-  io:
-    permission-denied: "Depolama hatası nedeniyle paket dosyaları kaldırılamadı, izin rededildi."
-    permission-denied.suggestion: "Uygulamayı yönetici olarak çalıştırmayı dene."
-  serialization:
-    xml-parse: "Paket kaldırma sırasında paket bilgisi tercüme edilirken bir serileştirme hatası oluştu"
-    xml-serialize: "Paket kaldırma sırasında paket bilgisi serilize edilirken bir hata oluştu."
-    io:
-      permission-denied: "Kurulum sırasında kurulum bilgisi serilize edilirken bir g/ç hatası oluştu, dosya izni rededildi."
-      permission-denied.suggestion: "Uygulamayı yönetici olarak çalıştırmayı dene."
+  pull-to-string-utf8: "Depo bilgileri okunurken bir kodlama hatası oluştu."
 
 serialization-error:
-  io:
-    permission-denied: "G/Ç hatası oluştu, dosya izni rededildi."
-    permission-denied.suggestion: "Uygulamayı yönetici olarak çalıştırmayı dene."
-  xml-parse: "XML metnini sağlam bir yapıya ayrıştırma başarısız oldu."
-  xml-serialize: "Sağlam bir yapıyı XML metnine serileştirme başarısız oldu."
+  json-error: "Bir serileştirme hatası oluştu."
 
-app-entry-error:
-  os: "Uygulama kurulum bilgisi yönetilemedi, bir işletim sistemi hatası oluştu."
-  io:
-    permission-denied: "G/Ç hatası oluştu, dosya izni rededildi."
-    permission-denied.suggestion: "Uygulamayı yönetici olarak çalıştırmayı dene."
+script-error:
+  http-stream-eror:
+    network: "Kurulum için gerekli betik ağ üzerinden getirilirken bir hata oluştu."
+    network.suggestion: "İnternet bağlantınızı kontrol edin."
+
+    content-length: "Kurulum için gerekli betik ağ üzerinden getirilirken bir hata oluştu."
+    content-length.suggestion: "İnternet bağlantınızı kontrol edin."
+
+    pull-to-string-utf8: "Kurulum için gerekli betik ağ üzerinden getirilirken bir kodlama hatası oluştu."
+    pull-to-string-utf8.suggestion: "İnternet bağlantınızı kontrol edin."
+
+  ijs-eror: "Kurulum betiği çalışıtılırken bir hata ile karşılaşıldı."
+
+archive-error:
+  sha-1-eror:
+    io-eror: "Paket dosyasının bütünlüğü doğrulanırken bir G/Ç hatası oluştu, kurulum başarısız oldu."
+
+  io-eror:
+    permission-denied: "Paket kurulumunda bir G/Ç hatası oluştu, izin reddedildi."
+    permission-denied.suggestion: "Uygulamayı yönetici olarak çalıştırmayı deneyin."
+
+  mismatching-sha-1: "Kurulum sırasında paket dosyasının bütünlüğü doğrulanamadı."
+  invalid: "Kurulum sırasında geçersiz paket dosyasıyla karşılaşıldı."
+  unsupported: "Kurulum sırasında desteklenmeyen paket dosyasıyla karşılaşıldı."
+  invalid-password: "Paket dosyası için geçersiz şifre girildi, kurulum başarısız oldu."
 
 symlink-error:
-  os: "Kısayol girişi yönetilemedi, bir işletim sistemi hatası oluştu."
-  io:
-    permission-denied: "Kısayol girişi bir G/Ç hatası nedeniyle yönetilemedi, dosya izni rededildi."
-    permission-denied.suggestion: "Uygulamayı yönetici olarak çalıştırmayı dene."
+  os-eror: "Sembolik bağlantı girişi yönetilemedi, işletim sistemi hatası oluştu."
+  
+  io-eror:
+    permission-denied: "Sembolik bağlantı girişi yönetilemedi, izin reddedildi."
+    permission-denied.suggestion: "Uygulamayı yönetici olarak çalıştırmayı deneyin."
 
 os-error:
-  other: "İşletim sistemi hatası oluştu."
+  other: "Bir işletim sistemi hatası oluştu."
 
 ijs-error:
-  execution: "JavaScript motoru hatası oluştu."
+  execution: "Bir kurulum betiği hatası oluştu."
 
-io-error: "G/Ç hatası"
-io-error.permission-denied: Bir dosya/yola erişim izni reddedildi.
-io-error.permission-denied.suggestion: Lütfen uygulamayı yönetici ayrıcalıklarıyla başlatın.
+io-error:
+  permission-denied: "Bir dosya/yola erişim izni reddedildi."
+  permission-denied.suggestion: "Lütfen uygulamayı yönetici yetkileriyle çalıştırın."
+
+## operations
+actions.extract-archive-operation: "Paket çıkarma işlemi"
+actions.delete-app-entry-operation: "Uygulama girişi silme işlemi"
+actions.create-file-operation: "Dosya oluşturma işlemi"
+actions.create-symlink-operation: "Sembolik bağlantı oluşturma işlemi"
+actions.create-maintenancetool-operation: "Bakım aracı oluşturma işlemi"
+
+## test
+greetings: Selamlar!
+test_of: '{0} ve {1} testi'
+hello: Merhaba
+hellox: Merhaba {0}
+messages:
+  hello: Merhaba

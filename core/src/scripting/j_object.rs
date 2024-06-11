@@ -4,17 +4,23 @@ use rquickjs::{FromJs, Ctx, Value};
 #[rquickjs::bind(object, public)]
 #[quickjs(bare)]
 pub mod js_app {
-    use crate::{workloads::abstraction::InstallyApp, extensions::future::FutureSyncExt, target::{GlobalConfig, GlobalConfigImpl}, *};
+    use definitions::package::Package;
+
+    use crate::{definitions::app::InstallyApp, extensions::future::FutureSyncExt, target::{GlobalConfig, GlobalConfigImpl}, *};
 
     pub struct InstallerJ {
         #[quickjs(readonly)]
-        pub app_raw_ptr: u64
+        pub app_raw_ptr: u64,
+
+        #[quickjs(readonly)]
+        pub target_package_raw_ptr: u64
     }
 
     impl InstallerJ {
-        pub fn new(app_raw_ptr: u64) -> Self {
+        pub fn new(app_raw_ptr: u64, target_package_raw_ptr: u64) -> Self {
             Self {
-                app_raw_ptr
+                app_raw_ptr,
+                target_package_raw_ptr
             }
         }
 
@@ -40,7 +46,8 @@ pub mod js_app {
         }
 
         pub fn create_link(&self, original: String, link_dir: String, link_name: String) {
-            let _ = self.traverse_app().symlink_file(original, link_dir, &link_name);
+            let package = self.traverse_package();
+            let _ = self.traverse_app().symlink_file(package, original, link_dir, &link_name);
         }
 
         pub fn get_and_execute(&self, url: String, arguments: rquickjs::Array<'_>, state_text: String) -> rquickjs::Result<bool> { 
@@ -142,9 +149,19 @@ pub mod js_app {
         pub fn on_after_uninstallition(&self) { }
         
         #[quickjs(skip)]
-        fn traverse_app(&self) -> InstallyApp {
+        fn traverse_app(&self) -> &InstallyApp {
             let app = unsafe { &mut *(self.app_raw_ptr as *mut InstallyApp) };
-            app.clone()
+            app
+        }
+
+        #[quickjs(skip)]
+        fn traverse_package(&self) -> Option<&Package> {
+            if self.target_package_raw_ptr == 0 {
+                return None
+            }
+
+            let package = unsafe { &mut *(self.target_package_raw_ptr as *mut Package) };
+            Some(package)
         }
 
         #[quickjs(skip)]
@@ -170,14 +187,10 @@ impl<'js> FromJs<'js> for js_app::InstallerJ {
         let j_obj = value.as_object();
         match j_obj {
             Some(obj) => {
-                let app_raw_ptr = obj.get::<_, u64>("app_raw_ptr")
-                .map_err(|err| rquickjs::Error::new_from_js_message(
-                    "InstallerJ",
-                    "InstallerJ (Rust)",
-                    format!("Failed to get app_raw_ptr: {}", err)
-                ))?;
-
-                return Ok(Self::new(app_raw_ptr));
+                let app = obj.get::<_, u64>("app_raw_ptr")?;
+                let package = obj.get::<_, u64>("target_package")?;
+                
+                return Ok(Self::new(app, package));
             },
             _ => {
                 return Err(rquickjs::Error::new_from_js("InstallerJ","InstallerJ"));

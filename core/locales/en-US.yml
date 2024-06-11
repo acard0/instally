@@ -9,7 +9,7 @@ states.installing: "Installing: '{0}'"
 states.compressing: "Compressing: '{0}'"
 states.deleting-files: "Deleting files"
 
-states.interrupted.by-error: "Interrupted by error: '{0}'"
+states.interrupted.by: "Interrupted by error: '{0}'"
 states.interrupted.by-user: "Interrupted by user"
 
 states.completed: "Completed"
@@ -28,78 +28,56 @@ back: Back
 finish: Finish
 close: Close
 open: Open
+code: Code
 
 ### errors
-repository-fetch-error:
-  http-stream:
-    network: "A network error accured while fetching repository information."
-    content-length: "A network error accured while fetching repository information."
-    pull-to-file:
-      permission-denied: "Permission was denied when trying to save repository information from the network to disk."
-      permission-denied.suggestion: "Try running the application as an administrator."
-    pull-to-string-utf8: "An encoding error occurred while reading repository information."
-  serialization:
-    xml-parse: "A serialization error accured while serializing repository information."
-    xml-serialize: "A serialization error accured while deserializing repository information."
-  io:
-    permission-denied: "An I/O error while serializing repository information, permission denied."
-    permission-denied.suggestion: "Try running the application as an administrator."
+http-stream-error:
+  network: "A network error occured."
+  network.suggestion: "Check your internet connection."
 
-package-download-error:
-  http-stream:
-    network: "An error occurred while downloading the application package over the network."
-    content-length: "An error occurred while downloading the application package over the network."
-    pull-to-file:
-      permission-denied: "The application package could not be saved to disk from the network, permission denied."
-      permission-denied.suggestion: "Try running the application as an administrator."
-  io:
-    permission-denied: "There was an I/O error while downloading package file, permission denied."
-    permission-denied.suggestion: "Try running the application as an administrator."
+  content-length: "A network error occured."
+  content-length.suggestion: "Check your internet connection."
 
-script-error:
-  http-stream:
-    network: "An error occurred while fetching the necessary script over the network for installation."
-    content-length: "An error occurred while fetching the necessary script over the network for installation."
-    pull-to-string-utf8: "An encoding error occurred while fetching the necessary script over the network for installation."
-  ijs: "The script required for the workload could not be executed."
-
-package-install-error:
-  archive: "An archive error occurred during installation."
-  serialization:
-    xml-parse: "An error occurred while parsing package information during installation."
-    xml-serialize: "An error occurred while serializing package information during installation."
-    io:
-      permission-denied: "An I/O error occurred while serializing installation information, permission denied."
+  pull-to-file:
+    io-eror:
+      permission-denied: "Access denied while attempting to download a file."
       permission-denied.suggestion: "Try running the application as an administrator."
 
-package-uninstall-error:
-  installation-not-found: "The package to be uninstalled was not found."
-  io: 
-    permission-denied: "Package files could not be removed due to storage errors, permission denied."
-    permission-denied.suggestion: "Try running the application as an administrator."
-  serialization:
-    xml-parse: "An error occurred while parsing package information during uninstallation."
-    xml-serialize: "An error occurred while serializing package information during uninstallation."
-    io:
-      permission-denied: "An I/O error occurred while serializing uninstallation information, permission denied."
-      permission-denied.suggestion: "Try running the application as an administrator."
+  pull-to-string-utf8: "An encoding error occurred while reading repository information."
 
 serialization-error:
-  io:
-    permission-denied: "An I/O error occurred, permission denied."
-    permission-denied.suggestion: "Try running the application as an administrator."
-  xml-parse: "Failed to parse XML text into a valid structure."
-  xml-serialize: "Failed to serialize a valid structure into XML text."
+  json-error-eror: "A serialization error occured."
 
-app-entry-error:
-  os: "Failed to manage application entry information, an operating system error occurred."
-  io:
-    permission-denied: "An I/O error occurred, permission denied."
+script-error:
+  http-stream-eror:
+    network: "An error occurred while fetching the necessary script over the network for installation."
+    network.suggestion: "Check your internet connection."
+
+    content-length: "An error occurred while fetching the necessary script over the network for installation."
+    content-length.suggestion: "Check your internet connection."
+
+    pull-to-string-utf8: "An encoding error occurred while fetching the necessary script over the network for installation."
+    pull-to-string-utf8.suggestion: "Check your internet connection."
+
+  ijs-eror: "Installation script failed to execute."
+
+archive-error:
+  sha-1-eror:
+    io-eror: "An i/o error occured while verifing the integrity of the package file, installation failed."
+
+  io-eror:
+    permission-denied: "An I/O error occurred while installing the package, permission denied."
     permission-denied.suggestion: "Try running the application as an administrator."
+
+  mismatching-sha-1: "Failed to verify integrity of the package file during the installation."
+  invalid: "Encountered invalid package file during the installation."
+  unsupported: "Encountered unsupported package file during the installation."
+  invalid-password: "Invalid password supplied for the package file, installation failed."
 
 symlink-error:
-  os: "Failed to manage symlink entry, an operating system error occurred."
-  io:
+  os-eror: "Failed to manage symlink entry, an operating system error occurred."
+  
+  io-eror:
     permission-denied: "Failed to manage symlink entry due to an I/O error, permission denied."
     permission-denied.suggestion: "Try running the application as an administrator."
 
@@ -107,8 +85,23 @@ os-error:
   other: "An operating system error occurred."
 
 ijs-error:
-  execution: "JavaScript engine encountered an error."
+  execution: "An installation script error occured."
 
-io-error: "I/O error"
-io-error.permission-denied: "Access permission denied to a file/path."
-io-error.permission-denied.suggestion: "Please run the application with administrator privileges."
+io-error:
+  permission-denied: "Access permission denied to a file/path."
+  permission-denied.suggestion: "Please run the application with administrator privileges."
+
+## operations
+actions.extract-archive-operation: "Package extract operation"
+actions.delete-app-entry-operation: "Delete app entry operation"
+actions.create-file-operation: "Create file operation"
+actions.create-symlink-operation: "Create symlink operation"
+actions.create-maintenancetool-operation: "Create maintenance tool operation"
+
+## test
+greetings: Greetings!
+test_of: Test of {0} and {1}
+hello: Hello
+hellox: Hello {0}
+messages:
+  hello: Hello

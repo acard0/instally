@@ -13,7 +13,7 @@ log = "0.4"
 futures-executor = "0.3"
 once_cell = "1"
 serde = { version = "1", features = ["derive"] }
-quick-xml = { version = "0.30", features = ["serialize"] }
+serde_json = "1"
 walkdir = "*"
 zip = "*"
 clap = { version = "4", features = ["derive"] }

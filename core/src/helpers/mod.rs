@@ -6,3 +6,4 @@ pub mod serializer;
 pub mod tmp;
 pub mod file;
 pub mod workflow;
+pub mod sha1;

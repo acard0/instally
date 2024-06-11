@@ -1,16 +1,19 @@
-use std::{io, path::{self, Path}, fs::File};
+use std::{io, path::{self, Path}};
 
-use filepath::FilePath;
 use walkdir::WalkDir;
-use zip::{write::FileOptions, result::{ZipError, ZipResult}, ZipWriter};
+use zip::{write::SimpleFileOptions, ZipWriter};
 
-pub fn compress_dirs<T>(it: &mut dyn Iterator<Item = walkdir::DirEntry>, prefix: &str, writer: T, method: zip::CompressionMethod,) 
-    -> zip::result::ZipResult<Vec<std::path::PathBuf>>
+use crate::helpers::{self, sha1::Sha1Error};
+
+use super::error::ArchiveError;
+
+pub fn compress_dirs<T>(it: &mut dyn Iterator<Item = walkdir::DirEntry>, prefix: &str, writer: &mut T, method: zip::CompressionMethod) 
+    -> Result<Vec<std::path::PathBuf>, ArchiveError>
 where T: io::Write + io::Seek,
 {
     let mut paths = vec![];
     let mut zip = ZipWriter::new(writer);
-    let options = FileOptions::default()
+    let options = SimpleFileOptions::default()
         .compression_method(method)
         .unix_permissions(0o755);
 
@@ -22,42 +25,49 @@ where T: io::Write + io::Seek,
         // Write file or directory explicitly
         // Some unzip tools unzip files with directory paths correctly, some do not!
         if path.is_file() {
-            log::trace!("Archive: adding file {path:?} as {name:?} ...");
+            log::trace!("archive: adding file {path:?} as {name:?} ...");
             #[allow(deprecated)]
             zip.start_file_from_path(name, options)?;
-            let mut f = File::open(path)?;
-            let path = f.path()?;
+            let mut f = helpers::file::open(path)?;
+            let path = helpers::file::path(&mut f)?;
 
-            io::Read::read_to_end(&mut f, &mut buffer)?;
-            io::Write::write_all(&mut zip, &buffer)?;
+            helpers::file::read_to_end(&mut f, &mut buffer)?;
+            helpers::file::write_all_stream(&mut zip, &buffer)?;
             buffer.clear();
 
             paths.push(path)
         } else if !name.as_os_str().is_empty() {
             // Only if not root! Avoids path spec / warning
             // and mapname conversion failed error on unzip
-            log::trace!("Archive: adding dir {path:?} as {name:?} ...");
+            log::trace!("archive: adding dir {path:?} as {name:?} ...");
             #[allow(deprecated)]
             zip.add_directory_from_path(name, options)?;
         }
     }
+
     zip.finish()?;
 
     Ok(paths)
 }
 
-pub fn compress_dir<PSrc: AsRef<Path>, PDst: AsRef<Path>>(src_dir: PSrc, dst_file: PDst, method: zip::CompressionMethod) 
-    -> ZipResult<Vec<std::path::PathBuf>> {
+pub fn compress_dir<P: AsRef<Path>>(src_dir: P, dst_file: P, method: zip::CompressionMethod, sha1: Option<&mut String>, writeout_sha1: bool) 
+    -> Result<Vec<std::path::PathBuf>, ArchiveError> {
 
     if !src_dir.as_ref().is_dir() {
-        return Err(ZipError::FileNotFound);
+        log::error!("Supplied source path parameter is not a directory for compression. {:?}", src_dir.as_ref());
+        return Err(ArchiveError::Io(std::io::Error::from(std::io::ErrorKind::NotFound).into()));
     }
 
-    let file = File::create(dst_file)?;
-
-    let walkdir = WalkDir::new(src_dir.as_ref().clone());
+    let mut file = helpers::file::create(&dst_file)?;
+    let walkdir = WalkDir::new(&src_dir);
     let it = walkdir.into_iter();
+    let paths = compress_dirs(&mut it.filter_map(|e: Result<walkdir::DirEntry, walkdir::Error>| e.ok()), src_dir.as_ref().to_str().unwrap(), &mut file, method)?;
 
-    let paths = compress_dirs(&mut it.filter_map(|e: Result<walkdir::DirEntry, walkdir::Error>| e.ok()), src_dir.as_ref().to_str().unwrap(), file, method)?;
+    if let Some(out) = sha1 {
+        *out = helpers::sha1::generate_sha1_file(&mut file)?;
+        helpers::file::write_all(format!("{}.sha1", dst_file.as_ref().to_str().unwrap()), out.as_bytes())
+            .map_err(|err| Sha1Error::from(err))?;
+    }
+
     Ok(paths)
 }

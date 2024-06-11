@@ -10,9 +10,9 @@ instally-core = { path = "../core" }
 eframe = { git = "https://github.com/rustytsuki/egui", branch = "rust-office", default-features = false, features = ["skia", "default_fonts"] }
 tokio = { version = "1", features = ["full"] }
 serde = { version = "1", features = ["derive"] }
-quick-xml = { version = "0.30", features = ["serialize"] }
+serde_json = "1"
 log = "0.4"
-env_logger = "0.10"
+env_logger = "0.11"
 sys-locale = "*"
 rust-i18n.workspace = true
 

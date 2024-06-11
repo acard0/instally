@@ -1,6 +1,6 @@
 use std::{ffi::{c_char, CStr}, cmp::Ordering};
 
-use instally_core::{helpers::{like::CStringLike, versioning::version_compare}, workloads::{definitions::{PackagePair, Package}, abstraction::AppContext}};
+use instally_core::{definitions::{package::Package, summary::PackagePair}, helpers::{like::CStringLike, versioning::version_compare}, definitions::context::AppContext};
 
 #[repr(C)]
 pub struct CallResult<T> {

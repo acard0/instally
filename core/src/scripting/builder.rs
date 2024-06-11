@@ -1,7 +1,7 @@
 use once_cell::sync::Lazy;
 use rquickjs::{AsyncRuntime, AsyncContext, async_with, FromJs, CatchResultExt, promise::Promise, Object};
 
-use crate::{workloads::abstraction::InstallyApp, extensions::future::FutureSyncExt};
+use crate::{definitions::{app::InstallyApp, package::Package}, extensions::future::FutureSyncExt};
 
 use super::{j_object::{js_app::InstallerJ, JsApp}, error::IJSError};
 
@@ -26,7 +26,7 @@ pub struct IJSRuntime {
 unsafe impl Sync for IJSRuntime {}
 unsafe impl std::marker::Send for IJSRuntime {}
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 #[repr(transparent)]
 pub struct IJSContext {
     ctx: *const AsyncContext,
@@ -43,8 +43,8 @@ impl IJSRuntime {
         unsafe { (*self.rt).clone() }
     }
 
-    pub fn create_context(&self, app: &InstallyApp) -> IJSContext {
-        IJSContext::new(&self, app.clone())
+    pub fn create_context(&self, app: &InstallyApp, target_package: Option<&Package>) -> IJSContext {
+        IJSContext::new(&self, app.clone(), target_package)
     }
 
     pub fn free(&self) {
@@ -53,14 +53,15 @@ impl IJSRuntime {
 }
 
 impl IJSContext {
-    pub fn new(rt: &IJSRuntime, app: InstallyApp) -> Self {
+    pub fn new(rt: &IJSRuntime, app: InstallyApp, target_package: Option<&Package>) -> Self {
         let rt = &rt.get_runtime();
         let ctx = AsyncContext::full(rt).wait().unwrap();
 
         ctx.with(|ctx| {
             let global = ctx.globals();
             let app_ptr = Box::into_raw(Box::new(app.clone())) as u64;
-            let j_object = InstallerJ::new(app_ptr);
+            let package_ptr = target_package.map(|package| Box::into_raw(Box::new(package.clone())) as u64).unwrap_or_default();
+            let j_object = InstallerJ::new(app_ptr, package_ptr);
 
             global.init_def::<Sleep>().unwrap();
             global.init_def::<Print>().unwrap();
@@ -110,7 +111,7 @@ impl IJSContext {
     pub fn mount(&self, src: &str) -> Result<(), IJSError> {
         self.eval_raw(src)?;
         self.eval_raw::<()>("mounted();")
-            .map_err(|err| IJSError::Execution(format!("Failed to mount given script. It has to contain 'mounted' function. {err:?}")))
+            .map_err(|err| IJSError::Execution(format!("Failed to mount given script. {err:?}")))
     }
 
     pub fn try_eval<V: for<'js> FromJs<'js> + 'static>(&self, src: &str) -> Result<V, IJSError> {
@@ -186,7 +187,7 @@ fn print(msg: String) {
 
 #[cfg(test)]
 mod tests {
-    use crate::workloads::definitions::Product;
+    use crate::definitions::product::Product;
 
     use super::*;
 
@@ -194,13 +195,13 @@ mod tests {
     fn test_localization() {
         let product = Product::from_template(
             Product::new(
-                "Wulite",
+                "Wulite Beta",
                 "@{App.Name}",
                 "liteware.io",
                 "https://liteware.io",
-                "@{Directories.User.Home}\\AppData\\Roaming\\@{App.Publisher}\\@{App.Name}",
-                "https://cdn.liteware.xyz/instally/wulite/",
+                "https://cdn.liteware.xyz/downloads/wulite/beta/",
                 "global_script.js",
+                "@{Directories.User.Home}\\AppData\\Local\\@{App.Publisher}\\@{App.Name}",
             )
         ).unwrap();
 
@@ -208,7 +209,7 @@ mod tests {
             .wait().unwrap();
 
         let rt = IJSRuntime::current_or_get();
-        let ctx = rt.create_context(&app);    
+        let ctx = rt.create_context(&app, None);
         
         let _: () = ctx.eval_raw(r#"
 
@@ -229,16 +230,52 @@ mod tests {
     }
     
     #[test]
-    fn test_dependency_check() {
+    fn test_install_redistruble_package() -> Result<(), rust_i18n::error::Error> {
         let product = Product::from_template(
             Product::new(
-                "Wulite",
+                "Wulite Beta",
                 "@{App.Name}",
                 "liteware.io",
                 "https://liteware.io",
-                "@{Directories.User.Home}\\AppData\\Roaming\\@{App.Publisher}\\@{App.Name}",
-                "https://cdn.liteware.xyz/instally/wulite/",
+                "https://cdn.liteware.io/downloads/wulite/release/",
                 "global_script.js",
+                "@{Directories.User.Home}\\AppData\\Roaming\\@{App.Publisher}\\@{App.Name}",
+            )
+        )?;
+
+        let app = InstallyApp::build(&product)
+            .wait()?;
+
+        let rt = IJSRuntime::current_or_get();
+        let ctx = rt.create_context(&app, None);
+
+        let _: () = ctx.eval_raw(r#"
+            log('Installed OS: ' + System.Os.Name);
+
+            Installer.add_translation("en-US", "states.migrating-installer", "Updating the Installer");
+            Installer.add_translation("tr-TR", "states.migrating-installer", "Kurulum güncelleniyor");
+        
+            if (System.Os.Name === "windows") {
+                Installer.get_and_execute("https://cdn.liteware.io/downloads/wulite/release/Setup.exe", [], Installer.translate("states.migrating-installer"));
+            }
+        "#)?;
+
+        ctx.free();
+        rt.free();
+        Ok(())
+    }
+
+    #[test]
+    fn test_dependency_check() {
+        let product = Product::from_template(
+            Product::new(
+                "Wulite Beta",
+                "@{App.Name}",
+                "liteware.io",
+                "https://liteware.io",
+                "https://cdn.liteware.xyz/downloads/wulite/beta/",
+                "global_script.js",
+                "@{Directories.User.Home}\\AppData\\Roaming\\@{App.Publisher}\\@{App.Name}",
             )
         ).unwrap();
 
@@ -246,7 +283,7 @@ mod tests {
             .wait().unwrap();
 
         let rt = IJSRuntime::current_or_get();
-        let ctx = rt.create_context(&app);
+        let ctx = rt.create_context(&app, None);
         
         let _: () = ctx.eval_raw(r#"
             log('Installed OS: ' + System.Os.Name);

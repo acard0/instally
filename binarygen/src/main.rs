@@ -5,8 +5,8 @@ use std::io::SeekFrom::Start;
 use std::path::Path;
 
 use clap::Parser;
+use instally_core::definitions::product::Product;
 use instally_core::helpers::serializer;
-use instally_core::workloads::definitions::Product;
 
 #[derive(clap::Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -32,7 +32,7 @@ fn inner(args: Opt) -> Result<(), Error> {
     let query: Vec<u8> = vec![35, 35, 35, 47, 80, 65, 89, 76, 79, 65, 68, 47, 35, 35, 35];
     
     let config_dir = Path::new(&args.config);
-    let product_path = config_dir.join("product.xml");
+    let product_path = config_dir.join("product.json");
 
     let tmp_product = Product::read_template(product_path).unwrap();
 
@@ -53,11 +53,11 @@ fn inner(args: Opt) -> Result<(), Error> {
 
         println!("Found to start of payload at position {}", pos as usize + query.len());
 
-        let xml_str = serializer::to_xml(&tmp_product).unwrap();
-        let xml = xml_str.as_bytes();
+        let json_str = serializer::to_json(&tmp_product).unwrap();
+        let bytes = json_str.as_bytes();
 
         file.borrow_mut().seek(Start(pos + query.len() as u64)).unwrap();
-        file.borrow_mut().write(&xml)?; 
+        file.borrow_mut().write(&bytes)?; 
 
         return Ok(());
     }

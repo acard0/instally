@@ -1,0 +1,1 @@
+{"Name":"Wulite 31","Title":"@{App.Name}","Publisher":"liteware.io","ProductUrl":"https://liteware.io","Repository":"https://cdn.liteware.xyz/downloads/wulite/release/","Script":"global_script.js","TargetDirectory":"@{Directories.User.Home}\\AppData\\Roaming\\@{App.Publisher}\\@{App.Name}"}
