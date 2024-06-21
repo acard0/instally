@@ -3,13 +3,17 @@
 
 use core::panic;
 
-use instally_core::{definitions::{app::InstallyApp, product::Product}, factory::WorkloadKind, helpers::serializer, workloads::{installer::InstallerOptions, uninstaller::UninstallerOptions, updater::UpdaterOptions}};
+use instally_core::{definitions::{app::InstallyApp, product::Product}, factory::WorkloadKind, helpers::{self, serializer}, workloads::{installer::InstallerOptions, uninstaller::UninstallerOptions, updater::UpdaterOptions}};
 
 mod factory;
 mod app;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    std::panic::set_hook(Box::new(move |err| {
+        helpers::file::write_all(".crash-report.log", format!("{:?}", err).as_bytes()).unwrap();
+    }));
+    
     let rust_log = std::env::var("RUST_LOG").unwrap_or("info".into()); 
     std::env::set_var("RUST_LOG", rust_log);  
     env_logger::init();
@@ -48,9 +52,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     if result.is_err() {
         _ = factory::failed(result.err().unwrap().into())
     } else {
-        let args = parse_args(result.as_ref().unwrap()).await;
+        let app = result.unwrap();
+        let args = parse_args(&app).await;
         _ = factory::run(
-            result.unwrap(),
+            app,
             args.workload_type,
             !args.silent
         ).handle.await;
