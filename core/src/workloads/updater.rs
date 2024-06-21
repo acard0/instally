@@ -83,7 +83,7 @@ impl UpdaterWrapper {
             self.app.set_workload_state(UpdaterWorkloadState::DownloadingComponent(remote.display_name.clone()));
             let update = self.app.download_package(&remote).wait()?;
 
-            log::info!("Removing old installation before update, package {}", &remote.display_name);
+            log::info!("Removing old installation before the update, package {}", &remote.display_name);
             self.app.set_workload_state(UpdaterWorkloadState::RemovingOutdatedComponent(remote.display_name.clone()));
             self.app.uninstall_package(&local).await?;
     
