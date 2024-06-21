@@ -18,7 +18,7 @@ pub enum SerializationError {
 pub fn to_json<T>(value: &T) -> Result<String, SerializationError>
 where T: ?Sized + serde::Serialize 
 {
-    let json = serde_json::to_string(value)?;
+    let json = serde_json::to_string_pretty(value)?;
     Ok(json)
 }
 
