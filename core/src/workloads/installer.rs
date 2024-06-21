@@ -5,6 +5,7 @@ use crate::*;
 use crate::definitions::script::ScriptOptional;
 use crate::extensions::future::FutureSyncExt;
 use crate::definitions::context::AppWrapper;
+use crate::helpers::file::IoError;
 
 use async_trait::async_trait;
 use definitions::error::PackageInstallError;
@@ -59,7 +60,10 @@ impl InstallerWrapper {
         let global = self.app.download_global_script().await?;
         global.if_exist(|s| Ok(s.invoke_before_installition()?))?;
 
-        self.app.dump_product_to_installation_directory(None);
+        std::fs::create_dir_all(&self.app.get_product().get_target_directory())
+            .map_err(|err| Error::from(IoError::from(err)))?;
+
+        self.app.dump_product_to_installation_directory(None)?;
 
         self.app.set_workload_state(InstallerWorkloadState::FetchingRemoteTree(self.app.get_product().name.clone()));     
         let repository = self.app.get_repository();

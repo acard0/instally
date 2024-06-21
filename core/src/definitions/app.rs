@@ -2,7 +2,7 @@ use std::{fmt::Display, path::Path, sync::Arc};
 
 use parking_lot::Mutex;
 
-use crate::{definitions::{dependency::{DependencyFile, PackageFile}, package::Package, product::Product, repository::Repository, script::Script, summary::InstallationSummary}, helpers::{self, serializer::SerializationError, tmp, workflow::Workflow}, http::client::{self, HttpStreamError}, workloads::{operations::{archive::ExtractArchiveOperation, createappentry::CreateAppEntryOperation, createfile::CreateFileOperation, createmaintinancetool::CreateMaintenanceToolOperation, createsymlink::CreateSymlinkOperation}, workload::WorkloadResult}};
+use crate::{definitions::{dependency::{DependencyFile, PackageFile}, package::Package, product::Product, repository::Repository, script::Script, summary::InstallationSummary}, helpers::{self, file::IoError, tmp, workflow::Workflow}, http::client::{self, HttpStreamError}, workloads::{operations::{archive::ExtractArchiveOperation, createappentry::CreateAppEntryOperation, createfile::CreateFileOperation, createmaintinancetool::CreateMaintenanceToolOperation, createsymlink::CreateSymlinkOperation}, workload::WorkloadResult}};
 
 use super::{context::{AppContext, AppContextField}, error::{AppBuildError, PackageDownloadError, PackageInstallError, PackageUninstallError, RepositoryFetchError, ScriptError}, operation::{Operation, OperationHistory}, script::ScriptOptional, summary::PackageInstallation};
 
@@ -109,7 +109,7 @@ impl InstallyApp
     /// Downloads package file of specified package
     pub async fn download_package(&self, package: &Package) -> Result<PackageFile, PackageDownloadError>{
         let product = &self.product;  
-        let mut file = tmp::create_tmp_file()?;
+        let mut file = tmp::create_tmp_file().map_err(|err| IoError::from(err))?;
         let _ = self.get_file(&product.get_uri_to_package(package), file.as_file_mut()).await?;
         let sha1 = self.get_text(&product.get_uri_to_package_sha1(package)).await?;
         Ok(PackageFile { handle: Arc::new(Mutex::new(file)), package: package.clone(), sha1 })
@@ -140,7 +140,7 @@ impl InstallyApp
     pub async fn get_dependency(&self, uri: &str, state_text: &str) -> Result<DependencyFile, PackageDownloadError>{
         self.set_workload_state(state_text);
 
-        let mut file = tmp::create_tmp_file()?;
+        let mut file = tmp::create_tmp_file().map_err(|err| IoError::from(err))?;
         let _ = self.get_file(uri, file.as_file_mut()).await?;
         Ok(DependencyFile::new(file))
     }

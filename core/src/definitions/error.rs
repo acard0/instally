@@ -31,8 +31,8 @@ pub enum PackageDownloadError {
     #[error("{}", .0.get_message_key())]
     HttpStream(#[from] HttpStreamError),
 
-    #[error("io-error.{}", .0.kind().to_string().to_case(Case::Kebab))]
-    Io(#[from] std::io::Error),
+    #[error("{}", .0.get_message_key())]
+    Io(#[from] IoError),
 }
 
 #[derive(thiserror::Error, rust_i18n::AsDetails, strum::AsRefStr, Debug)]
