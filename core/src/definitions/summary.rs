@@ -174,7 +174,7 @@ impl InstallationSummary {
     }
     
     pub(super) fn save(&mut self) -> Result<&mut Self, SerializationError> {
-        let mut file = helpers::file::open_create(self.path.clone())?;
+        let mut file = helpers::file::create(self.path.clone())?;
         helpers::file::write_all_file(&mut file, serializer::to_json(&self.inner)?.as_bytes())?;
         Ok(self)
     }
