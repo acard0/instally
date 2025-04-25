@@ -49,14 +49,14 @@ fn inner(args: Opt) -> Result<(), Error> {
         .map_err(|e| e.to_string())?;
 
     if let Some(loc) = locs.first() {
-        let pos = *loc as u64;
+        let pos = *loc;
 
-        println!("Found to start of payload at position {}", pos as usize + query.len());
+        println!("Found to start of payload at position {}", pos + query.len());
 
         let json_str = serializer::to_json(&tmp_product).unwrap();
         let bytes = json_str.as_bytes();
 
-        file.borrow_mut().seek(Start(pos + query.len() as u64)).unwrap();
+        file.borrow_mut().seek(Start((pos + query.len()) as u64)).unwrap();
         file.borrow_mut().write(&bytes)?; 
 
         return Ok(());
