@@ -31,7 +31,7 @@ impl Meta {
 pub unsafe extern "C" fn check_updates(m_packages: *mut ByteBuffer) -> *mut CallResult::<ByteBuffer> {  
     let meta = Meta::get();
     let packages = match m_packages {
-        buff if (*buff).ptr() != std::ptr::null_mut() => {
+        buff if buff.is_null() == false && (*buff).len() > 0 => {
             let packages = m_packages.read()
                 .into_string_vec();
 
@@ -81,8 +81,7 @@ pub unsafe extern "C" fn apply_updates(m_packages: *mut ByteBuffer, state_callba
 
 #[no_mangle]
 pub unsafe extern "C" fn remove_package(m_packages: *mut ByteBuffer, state_callback: extern "C" fn(CAppState)) {
-    let packages = m_packages.read()
-        .into_string_vec();
+    let packages = m_packages.read().into_string_vec();
 
     log::info!("Target packages are: {:?}", packages);
 
@@ -101,8 +100,7 @@ pub unsafe extern "C" fn remove_package(m_packages: *mut ByteBuffer, state_callb
 
 #[no_mangle]
 pub unsafe extern "C" fn install_package(m_packages: *mut ByteBuffer, state_callback: extern "C" fn(CAppState)) {
-    let packages = m_packages.read()
-        .into_string_vec();
+    let packages = m_packages.read().into_string_vec();
      
     log::info!("Target packages are {:?}", packages);
 
@@ -127,16 +125,14 @@ fn execute_blocking(product_meta: &Product, settings: WorkloadKind, state_callba
     ON_WORK.store(true, std::sync::atomic::Ordering::Relaxed);
 
     let meta = Meta::get();
-    let runtime_executor = factory::run_tokio(meta.app.clone(), settings);
+    let executor = factory::run(meta.app.clone(), settings, None);
 
-    let sub_id = runtime_executor.executor.app.get_context().lock().subscribe(Box::new(move |f| {
+    let sub_id = executor.app.get_context().lock().subscribe(Box::new(move |f| {
         state_callback(f.state_cloned.clone().into());
     }));
 
-    let out = runtime_executor.runtime
-        .block_on(runtime_executor.executor.handle);
-
-    runtime_executor.executor.app.get_context().lock().unsubscribe(sub_id);
+    let out = executor.runtime.block_on(executor.handle);
+    executor.app.get_context().lock().unsubscribe(sub_id);
 
     ON_WORK.store(false, std::sync::atomic::Ordering::Relaxed);
 }
