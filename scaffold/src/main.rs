@@ -2,7 +2,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 
 use core::panic;
-
+use directories::UserDirs;
 use instally_core::{definitions::{app::InstallyApp, product::Product}, factory::WorkloadKind, helpers::{self, serializer}, workloads::{installer::InstallerOptions, uninstaller::UninstallerOptions, updater::UpdaterOptions}};
 
 mod factory;
@@ -11,7 +11,9 @@ mod app;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     std::panic::set_hook(Box::new(move |err| {
-        helpers::file::write_all(".crash-report.log", format!("{:?}", err).as_bytes()).unwrap();
+        let directories = UserDirs::new().unwrap();
+        let log_path = directories.desktop_dir().unwrap().join(".crash_report.log");
+        helpers::file::write_all_file(&mut helpers::file::open_create(log_path).unwrap(), format!("{:?}", err).as_bytes()).unwrap();
     }));
     
     let rust_log = std::env::var("RUST_LOG").unwrap_or("info".into()); 
@@ -46,7 +48,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             ).unwrap()
         }
     };
-
+    
     let result = InstallyApp::build(&product).await;    
 
     if result.is_err() {
