@@ -1,19 +1,27 @@
 use chrono::Datelike;
+use windows::core::Interface;
+use windows::Win32::Foundation::HANDLE;
 use windows::Win32::Foundation::WIN32_ERROR;
 use windows::Win32::System::Com::CLSCTX_INPROC_SERVER;
 use windows::Win32::System::Com::CoCreateInstance;
 use windows::Win32::System::Com::CoInitialize;
 use windows::Win32::System::Com::IPersistFile;
+use windows::Win32::System::Console::AllocConsole;
+use windows::Win32::System::Console::SetStdHandle;
+use windows::Win32::System::Console::STD_ERROR_HANDLE;
+use windows::Win32::System::Console::STD_INPUT_HANDLE;
+use windows::Win32::System::Console::STD_OUTPUT_HANDLE;
 use windows::Win32::System::Registry::HKEY_CURRENT_USER;
 use windows::Win32::System::Registry::HKEY_LOCAL_MACHINE;
 use windows::Win32::System::Registry::RegDeleteKeyA;
-use windows::Win32::UI::Shell::IShellLinkA;
 use windows::core::BSTR;
-use windows::core::ComInterface;
 use windows::core::PCSTR;
 use windows::core::PCWSTR;
+use windows::Win32::UI::Shell::IShellLinkW;
 use winreg::RegKey;
 
+use std::fs::OpenOptions;
+use std::os::windows::io::AsRawHandle;
 use std::path::Path;
 
 use crate::helpers;
@@ -32,13 +40,13 @@ pub fn symlink_file<P: AsRef<Path>, Q: AsRef<Path>>(original: P, link_dir: Q, li
     let link = link_dir.as_ref().join(format!("{}.lnk", link_name));
 
     unsafe {
-        _ = CoInitialize(None)?;
+        _ = CoInitialize(None).ok()?;
 
-        let guid = windows::core::GUID::from("00021401-0000-0000-C000-000000000046");
-        let linker: IShellLinkA = CoCreateInstance(&guid as _, None, CLSCTX_INPROC_SERVER)?;
-    
-        linker.SetPath(PCSTR::from_raw(original.as_ref().to_str().unwrap().as_ptr_nul()))?;
-        linker.SetWorkingDirectory(PCSTR::from_raw(original.as_ref().parent().unwrap().to_str().unwrap().as_ptr_nul()))?;
+        let guid = windows::core::GUID::try_from("00021401-0000-0000-C000-000000000046").unwrap();
+        let linker: IShellLinkW = CoCreateInstance(&guid as _, None, CLSCTX_INPROC_SERVER)?;
+   
+        linker.SetPath(PCWSTR::from_raw(BSTR::from(original.as_ref().to_str().unwrap()).into_raw()))?;
+        linker.SetWorkingDirectory(PCWSTR::from_raw(BSTR::from(link_dir.as_ref().to_str().unwrap()).into_raw()))?;
     
         let file = linker.cast::<IPersistFile>()?;
         file.Save(PCWSTR::from_raw(BSTR::from(link.to_str().unwrap()).into_raw()), true)?;
@@ -61,7 +69,7 @@ pub fn create_app_entry(app: &InstallyApp, maintenance_tool_name: &str) -> Resul
     let date = chrono::Local::now();
     let formatted_date = format!("{:02}.{:02}.{:02}", date.year() % 100, date.month(), date.day());
 
-    let hkey = RegKey::predef(HKEY_CURRENT_USER.0);
+    let hkey = RegKey::predef(HKEY_CURRENT_USER.0 as isize);
     let (key, disp) = hkey.create_subkey(path).unwrap();
     key.set_value("DisplayName", &app.get_product().name)?;
     key.set_value("Comments", &app.get_product().name)?;
@@ -108,8 +116,8 @@ impl GlobalConfigImpl for GlobalConfig {
     fn set(&self, key: String, name: String, value: String) -> Result<(), OsError> {
         let hklm_str = key.split('\\').collect::<Vec<&str>>();
         let hkey = match hklm_str[0] {
-            "HKEY_CURRENT_USER" => RegKey::predef(HKEY_CURRENT_USER.0),
-            "HKEY_LOCAL_MACHINE" => RegKey::predef(HKEY_LOCAL_MACHINE.0),
+            "HKEY_CURRENT_USER" => RegKey::predef(HKEY_CURRENT_USER.0 as isize),
+            "HKEY_LOCAL_MACHINE" => RegKey::predef(HKEY_LOCAL_MACHINE.0 as isize),
             _ => return Err(OsError::Other(format!("Unsupported HKEY: {}", hklm_str[0])))
         };
 
@@ -122,8 +130,8 @@ impl GlobalConfigImpl for GlobalConfig {
     fn get(&self, key: String, name: String) -> Result<String, OsError> {
         let hklm_str = key.split('\\').collect::<Vec<&str>>();
         let hkey = match hklm_str[0] {
-            "HKEY_CURRENT_USER" => RegKey::predef(HKEY_CURRENT_USER.0),
-            "HKEY_LOCAL_MACHINE" => RegKey::predef(HKEY_LOCAL_MACHINE.0),
+            "HKEY_CURRENT_USER" => RegKey::predef(HKEY_CURRENT_USER.0 as isize),
+            "HKEY_LOCAL_MACHINE" => RegKey::predef(HKEY_LOCAL_MACHINE.0 as isize),
             _ => return Err(OsError::Other(format!("Unsupported HKEY: {}", hklm_str[0])))
         };
 
@@ -136,13 +144,36 @@ impl GlobalConfigImpl for GlobalConfig {
     fn delete(&self, key: String) -> Result<(), OsError> {
         let hklm_str = key.split('\\').collect::<Vec<&str>>();
         let hkey = match hklm_str[0] {
-            "HKEY_CURRENT_USER" => RegKey::predef(HKEY_CURRENT_USER.0),
-            "HKEY_LOCAL_MACHINE" => RegKey::predef(HKEY_LOCAL_MACHINE.0),
+            "HKEY_CURRENT_USER" => RegKey::predef(HKEY_CURRENT_USER.0 as isize),
+            "HKEY_LOCAL_MACHINE" => RegKey::predef(HKEY_LOCAL_MACHINE.0 as isize),
             _ => return Err(OsError::Other(format!("Unsupported HKEY: {}", hklm_str[0])))
         };
 
         hkey.delete_subkey_all(&hklm_str[1..].join("\\"))
             .map_err(|err| OsError::Other(err.to_string()))
+    }
+}
+
+pub fn alloc_console() -> std::io::Result<()> {
+    unsafe {
+        _= AllocConsole();
+        
+        let stdin = OpenOptions::new().read(true).open("CONIN$").unwrap();
+        let stdin_handle = stdin.as_raw_handle();
+        SetStdHandle(STD_INPUT_HANDLE, HANDLE(stdin_handle)).unwrap();
+        std::mem::forget(stdin);
+
+        let stdout = OpenOptions::new().write(true).open("CONOUT$").unwrap();
+        let stdout_handle = stdout.as_raw_handle();
+        SetStdHandle(STD_OUTPUT_HANDLE, HANDLE(stdout_handle)).unwrap();
+        std::mem::forget(stdout);
+
+        let stderr = OpenOptions::new().write(true).open("CONOUT$").unwrap();
+        let stderr_handle = stderr.as_raw_handle();
+        SetStdHandle(STD_ERROR_HANDLE, HANDLE(stderr_handle)).unwrap();
+        std::mem::forget(stderr);
+
+        Ok(()) 
     }
 }
 
