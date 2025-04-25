@@ -51,13 +51,7 @@ impl Product{
         let formatter = template.create_formatter();
         let back_step = serializer::to_json(&template)?;
         let json = formatter.format(&back_step);
-
-        let product: Product = serializer::from_json(&json)?;
-
-        let current = std::env::current_dir().unwrap();
-        let target = &product.target_directory;
-
-        Ok(product)
+        Ok(serializer::from_json(&json)?)
     }
 
     pub fn create_formatter(&self) -> TemplateFormat {
