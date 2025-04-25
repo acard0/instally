@@ -11,37 +11,38 @@ pub enum WorkloadKind {
 }
 
 pub struct Executor {
+    pub runtime: tokio::runtime::Handle,
     pub handle: tokio::task::JoinHandle<WorkloadResult>,
     pub app: InstallyApp
 }
 
-pub struct RuntimeExecutor {
-    pub executor: Executor,
-    pub runtime: tokio::runtime::Runtime
-}
+pub fn run(app: InstallyApp, settings: WorkloadKind, runtime: Option<tokio::runtime::Runtime>) -> Executor {
+    if let Some(rt) = runtime {
+        return run_inner(app, settings, rt.handle().to_owned());
+    }
 
-pub fn run_tokio(app: InstallyApp, settings: WorkloadKind) -> RuntimeExecutor {
-    let runtime = tokio::runtime::Builder::new_multi_thread()
+    if let Ok(existing) = tokio::runtime::Handle::try_current() {
+        return run_inner(app, settings, existing.to_owned());
+    }
+
+    let next = tokio::runtime::Builder::new_multi_thread()
         .enable_all()
         .build()
         .unwrap();
 
-    let executor = runtime.block_on(async move {
-        run(app, settings)
+    run(app, settings, Some(next))
+}
+
+pub fn run_inner(app: InstallyApp, settings: WorkloadKind, runtime: tokio::runtime::Handle) -> Executor {
+    let rt0 = runtime.clone();
+    let executor = runtime.spawn_blocking(|| {
+        Executor { runtime: rt0, handle: spawn_workload(&app, settings), app }
     });
 
-    RuntimeExecutor { executor, runtime }
+    executor.wait().unwrap()
 }
 
-pub fn run(app: InstallyApp, settings: WorkloadKind) -> Executor {
-    if let Ok(_) = tokio::runtime::Handle::try_current() {
-        return Executor { handle: run_inner(&app, settings), app };
-    }
- 
-    panic!("No running tokio runtime found.")
-}
-
-fn run_inner(app: &InstallyApp, settings: WorkloadKind) -> tokio::task::JoinHandle<WorkloadResult> {
+fn spawn_workload(app: &InstallyApp, settings: WorkloadKind) -> tokio::task::JoinHandle<WorkloadResult> {
     let join = match settings {
         WorkloadKind::Installer(r) => {
             log::info!("Spawning installer workload thread");
@@ -81,8 +82,7 @@ fn installer(mut wrapper: InstallerWrapper) -> tokio::task::JoinHandle<WorkloadR
                 result
             },
             (Err(err), _) | (_, Err(err)) => {
-                log::error!("\n{err:?}");
-                log::info!("Workload failed. \n{err:?}");
+                log::error!("Workload failed. \n{err:?}");
 
                 let result = WorkloadResult::Error(err.get_details().to_owned());
                 wrapper.app.set_workload_state(InstallerWorkloadState::Interrupted(err.get_details().to_owned()));
@@ -92,7 +92,6 @@ fn installer(mut wrapper: InstallerWrapper) -> tokio::task::JoinHandle<WorkloadR
         }
     })
 }
-
 
 fn updater(mut wrapper: UpdaterWrapper) -> tokio::task::JoinHandle<WorkloadResult> {
     tokio::spawn(async move {
@@ -112,8 +111,7 @@ fn updater(mut wrapper: UpdaterWrapper) -> tokio::task::JoinHandle<WorkloadResul
                 result
             },
             (Err(err), _) | (_, Err(err)) => {
-                log::error!("\n{err:?}");
-                log::info!("Workload failed. \n{err:?}");
+                log::error!("Workload failed. \n{err:?}");
 
                 let result = WorkloadResult::Error(err.get_details().to_owned());
                 wrapper.app.set_workload_state(UpdaterWorkloadState::Interrupted(err.get_details().to_owned()));
@@ -142,8 +140,7 @@ fn uninstaller(mut wrapper: UninstallerWrapper) -> tokio::task::JoinHandle<Workl
                 result
             },
             (Err(err), _) | (_, Err(err)) => {
-                log::error!("\n{err:?}");
-                log::info!("Workload failed. \n{err:?}");
+                log::error!("Workload failed. \n{err:?}");
 
                 let result = WorkloadResult::Error(err.get_details().to_owned());
                 wrapper.app.set_workload_state(UninstallerWorkloadState::Interrupted(err.get_details().to_owned()));
