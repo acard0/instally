@@ -35,7 +35,6 @@ impl<T: Default + Clone> AppWrapper<T> {
 
 #[derive(struct_field::StructField, Clone, Debug, Default)]
 pub struct AppContext {
-    frame_count: u64, 
     state: Option<String>,
     state_progress: f32,
     result: Option<WorkloadResult>,
@@ -66,7 +65,6 @@ impl AppContext
 {
     pub fn new(summary: InstallationSummary) -> Self {
         AppContext {
-            frame_count: 0,
             state_progress: 0.0,
             state: None,
             result: None,
