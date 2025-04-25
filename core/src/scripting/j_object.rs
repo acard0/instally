@@ -10,14 +10,14 @@ pub mod js_app {
 
     pub struct InstallerJ {
         #[quickjs(readonly)]
-        pub app_raw_ptr: u64,
+        pub app_raw_ptr: usize,
 
         #[quickjs(readonly)]
-        pub target_package_raw_ptr: u64
+        pub target_package_raw_ptr: usize
     }
 
     impl InstallerJ {
-        pub fn new(app_raw_ptr: u64, target_package_raw_ptr: u64) -> Self {
+        pub fn new(app_raw_ptr: usize, target_package_raw_ptr: usize) -> Self {
             Self {
                 app_raw_ptr,
                 target_package_raw_ptr
@@ -187,8 +187,8 @@ impl<'js> FromJs<'js> for js_app::InstallerJ {
         let j_obj = value.as_object();
         match j_obj {
             Some(obj) => {
-                let app = obj.get::<_, u64>("app_raw_ptr")?;
-                let package = obj.get::<_, u64>("target_package")?;
+                let app = obj.get::<_, usize>("app_raw_ptr")?;
+                let package = obj.get::<_, usize>("target_package")?;
                 
                 return Ok(Self::new(app, package));
             },
