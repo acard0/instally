@@ -59,8 +59,8 @@ impl IJSContext {
 
         ctx.with(|ctx| {
             let global = ctx.globals();
-            let app_ptr = Box::into_raw(Box::new(app.clone())) as u64;
-            let package_ptr = target_package.map(|package| Box::into_raw(Box::new(package.clone())) as u64).unwrap_or_default();
+            let app_ptr = Box::into_raw(Box::new(app.clone())) as usize;
+            let package_ptr = target_package.map(|package| Box::into_raw(Box::new(package.clone())) as usize).unwrap_or_default();
             let j_object = InstallerJ::new(app_ptr, package_ptr);
 
             global.init_def::<Sleep>().unwrap();
