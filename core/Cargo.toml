@@ -6,35 +6,34 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-tokio = { version = "1.0", features = ["full"] }
-async-trait = "0.1"
-futures = "0.3"
-once_cell = "1"
-parking_lot = "0.12"
-bytes = "1.4.0"
-log = "0.4"
-env_logger = "0.10"
-thiserror = "1"
-strum = { version = "0.26", features = ["derive"] }
-reqwest = { version = "0.11", features = ["stream"] }
-serde = { version = "1", features = ["derive"] }
-serde_json = "1"
+tokio = { version = "1.44.2", features = ["full"] }
+async-trait = "0.1.88"
+futures = "0.3.31"
+once_cell = "1.21.3"
+parking_lot = "0.12.3"
+bytes = "1.10.1"
+log = "0.4.27"
+env_logger = "0.11.8"
+thiserror = "2.0.12"
+strum = { version = "0.27.1", features = ["derive"] }
+reqwest = { version = "0.12.15", features = ["stream"] }
+serde = { version = "1.0.219", features = ["derive"] }
+serde_json = "1.0.140"
 chrono = { version = "0.4.40", features = ["serde"] }
-rquickjs = { version = "0.3", features = [ "macro", "dyn-load", "classes", "either", "indexmap", "properties", "futures" ] } 
-walkdir = "2"
+rquickjs = { version = "0.3.0", features = [ "macro", "dyn-load", "classes", "either", "indexmap", "properties", "futures" ] } 
+walkdir = "2.5.0"
 directories = "6.0.0"
-filepath = "0.1"
-tempfile = "3.7"
-zip = "2.1.1"
-sha1 = "0.10"
-sysinfo = "0.30.12"
+filepath = "0.2.0"
+tempfile = "3.19.1"
+zip = "2.1"
+sha1 = "0.10.6"
+sysinfo = "0.34"
 sys-locale = "0.3"
-convert_case = "0.6.0"
+convert_case = "0.8.0"
 self-replace = "1.3"
 rust-i18n.workspace = true
 struct_field.workspace = true
 
 [target.'cfg(windows)'.dependencies]
-winreg = "0.50.0"
-
+winreg = "0.55.0"
 windows = { version = "0.61.1", features = ["Win32", "Win32_Foundation", "Win32_UI_WindowsAndMessaging", "Win32_System_Console", "Win32_System_Diagnostics", "Win32_System_Diagnostics_Debug", "Win32_System_Threading", "Win32_Security", "Win32_System_Memory", "Win32_Security_Authentication_Identity", "Win32_System_LibraryLoader", "Win32_Storage_FileSystem", "Win32_System_Registry", "Win32_System_Com", "Win32_UI_Shell"]}
