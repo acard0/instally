@@ -1,7 +1,9 @@
 
+use std::{sync::{atomic::{AtomicBool, Ordering}, Arc}, thread, time::Duration};
+
 use rust_i18n::error::ErrorDetails;
 
-use crate::{definitions::app::InstallyApp, extensions::future::FutureSyncExt, workloads::{installer::{InstallerOptions, InstallerWorkloadState, InstallerWrapper}, noop::{NoopOptions, NoopWorkloadState, NoopWrapper}, uninstaller::{UninstallerOptions, UninstallerWorkloadState, UninstallerWrapper}, updater::{UpdaterOptions, UpdaterWorkloadState, UpdaterWrapper}, workload::{Workload, WorkloadResult}}};
+use crate::{definitions::{app::InstallyApp, context::AppContextNotifiable}, extensions::future::FutureSyncExt, workloads::{installer::{InstallerOptions, InstallerWorkloadState, InstallerWrapper}, noop::{NoopOptions, NoopWorkloadState, NoopWrapper}, uninstaller::{UninstallerOptions, UninstallerWorkloadState, UninstallerWrapper}, updater::{UpdaterOptions, UpdaterWorkloadState, UpdaterWrapper}, workload::{Workload, WorkloadResult}}};
 
 pub enum WorkloadKind {
     Installer(InstallerOptions),
@@ -16,7 +18,7 @@ pub struct Executor {
     pub app: InstallyApp
 }
 
-pub fn run(app: InstallyApp, settings: WorkloadKind, runtime: Option<tokio::runtime::Runtime>) -> Executor {
+pub fn run(app: InstallyApp, settings: WorkloadKind, runtime: Option<&tokio::runtime::Runtime>) -> Executor {
     if let Some(rt) = runtime {
         return run_inner(app, settings, rt.handle().to_owned());
     }
@@ -30,7 +32,21 @@ pub fn run(app: InstallyApp, settings: WorkloadKind, runtime: Option<tokio::runt
         .build()
         .unwrap();
 
-    run(app, settings, Some(next))
+    let m_rt = Box::into_raw(Box::new(next));
+
+    let mu_rt = m_rt as usize;
+    let spawned = Arc::new(AtomicBool::new(false));
+    let spawned_cloned = spawned.clone(); 
+    app.get_context().lock().subscribe(Box::new(move |f| {
+        if f.state_cloned.is_complete() && !spawned_cloned.swap(true, Ordering::SeqCst) {
+            thread::spawn(move || {
+                thread::sleep(Duration::from_secs(10));
+                _ = unsafe { Box::from_raw(mu_rt as *mut tokio::runtime::Runtime) };
+            });
+        }
+    }));
+
+    run(app, settings, Some(unsafe { &*m_rt }))
 }
 
 pub fn run_inner(app: InstallyApp, settings: WorkloadKind, runtime: tokio::runtime::Handle) -> Executor {
