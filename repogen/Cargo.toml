@@ -17,3 +17,7 @@ serde_json = "1"
 walkdir = "*"
 zip = "*"
 clap = { version = "4", features = ["derive"] }
+
+[target.'cfg(target_os = "windows")'.build-dependencies]
+winres = "0.1"
+static_vcruntime = "2"
