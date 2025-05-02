@@ -46,7 +46,7 @@ pub fn symlink_file<P: AsRef<Path>, Q: AsRef<Path>>(original: P, link_dir: Q, li
         let linker: IShellLinkW = CoCreateInstance(&guid as _, None, CLSCTX_INPROC_SERVER)?;
    
         linker.SetPath(PCWSTR::from_raw(BSTR::from(original.as_ref().to_str().unwrap()).into_raw()))?;
-        linker.SetWorkingDirectory(PCWSTR::from_raw(BSTR::from(link_dir.as_ref().to_str().unwrap()).into_raw()))?;
+        linker.SetWorkingDirectory(PCWSTR::from_raw(BSTR::from(original.as_ref().parent().expect("link has no parent for wd").to_str().unwrap()).into_raw()))?;
     
         let file = linker.cast::<IPersistFile>()?;
         file.Save(PCWSTR::from_raw(BSTR::from(link.to_str().unwrap()).into_raw()), true)?;
@@ -69,7 +69,7 @@ pub fn create_app_entry(app: &InstallyApp, maintenance_tool_name: &str) -> Resul
     let date = chrono::Local::now();
     let formatted_date = format!("{:02}.{:02}.{:02}", date.year() % 100, date.month(), date.day());
 
-    let hkey = RegKey::predef(HKEY_CURRENT_USER.0 as isize);
+    let hkey = RegKey::predef(HKEY_CURRENT_USER.0);
     let (key, disp) = hkey.create_subkey(path).unwrap();
     key.set_value("DisplayName", &app.get_product().name)?;
     key.set_value("Comments", &app.get_product().name)?;
@@ -116,8 +116,8 @@ impl GlobalConfigImpl for GlobalConfig {
     fn set(&self, key: String, name: String, value: String) -> Result<(), OsError> {
         let hklm_str = key.split('\\').collect::<Vec<&str>>();
         let hkey = match hklm_str[0] {
-            "HKEY_CURRENT_USER" => RegKey::predef(HKEY_CURRENT_USER.0 as isize),
-            "HKEY_LOCAL_MACHINE" => RegKey::predef(HKEY_LOCAL_MACHINE.0 as isize),
+            "HKEY_CURRENT_USER" => RegKey::predef(HKEY_CURRENT_USER.0),
+            "HKEY_LOCAL_MACHINE" => RegKey::predef(HKEY_LOCAL_MACHINE.0),
             _ => return Err(OsError::Other(format!("Unsupported HKEY: {}", hklm_str[0])))
         };
 
@@ -130,8 +130,8 @@ impl GlobalConfigImpl for GlobalConfig {
     fn get(&self, key: String, name: String) -> Result<String, OsError> {
         let hklm_str = key.split('\\').collect::<Vec<&str>>();
         let hkey = match hklm_str[0] {
-            "HKEY_CURRENT_USER" => RegKey::predef(HKEY_CURRENT_USER.0 as isize),
-            "HKEY_LOCAL_MACHINE" => RegKey::predef(HKEY_LOCAL_MACHINE.0 as isize),
+            "HKEY_CURRENT_USER" => RegKey::predef(HKEY_CURRENT_USER.0),
+            "HKEY_LOCAL_MACHINE" => RegKey::predef(HKEY_LOCAL_MACHINE.0),
             _ => return Err(OsError::Other(format!("Unsupported HKEY: {}", hklm_str[0])))
         };
 
@@ -144,8 +144,8 @@ impl GlobalConfigImpl for GlobalConfig {
     fn delete(&self, key: String) -> Result<(), OsError> {
         let hklm_str = key.split('\\').collect::<Vec<&str>>();
         let hkey = match hklm_str[0] {
-            "HKEY_CURRENT_USER" => RegKey::predef(HKEY_CURRENT_USER.0 as isize),
-            "HKEY_LOCAL_MACHINE" => RegKey::predef(HKEY_LOCAL_MACHINE.0 as isize),
+            "HKEY_CURRENT_USER" => RegKey::predef(HKEY_CURRENT_USER.0),
+            "HKEY_LOCAL_MACHINE" => RegKey::predef(HKEY_LOCAL_MACHINE.0),
             _ => return Err(OsError::Other(format!("Unsupported HKEY: {}", hklm_str[0])))
         };
 
