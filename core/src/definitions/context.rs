@@ -72,7 +72,7 @@ impl AppContext
         }
     }
 
-    pub fn is_completed(&self) -> bool {
+    pub fn is_complete(&self) -> bool {
         self.get_result().is_some()
     }
 

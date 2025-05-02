@@ -129,8 +129,8 @@ fn view(app: &InstallyApp) -> Element<Msg> {
             .align_x(Horizontal::Left);
 
         let abort = {
-            let base = button(text(if ctx.is_completed() { t!("ok") } else { t!("abort") })).style(rounded_primary);
-            match ctx.is_completed() {
+            let base = button(text(if ctx.is_complete() { t!("ok") } else { t!("abort") })).style(rounded_primary);
+            match ctx.is_complete() {
                 true => base.on_press(Msg::Quit),
                 false => base.on_press(Msg::Abort),
             }
