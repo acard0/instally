@@ -58,7 +58,11 @@ impl I18n {
 
         // what is the point of using rust anyway?
         let simple_backend: &SimpleBackend = unsafe {
-            &*(((self as *const I18n as usize) - 8 - 40) as *const SimpleBackend)
+            if size_of::<usize>() == 4 {
+                &*(((self as *const I18n as usize) - size_of::<usize>() - 28) as *const SimpleBackend)
+            } else {
+                &*(((self as *const I18n as usize) - size_of::<usize>() - 40) as *const SimpleBackend)
+            }
         };
 
         let translations: &HashMap<String, HashMap<String, String>> = unsafe {
