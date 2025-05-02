@@ -1,18 +1,21 @@
 
 fn main() {
-  if cfg!(target_os = "windows") {
-
-    // embed icon
-    let mut res = winres::WindowsResource::new();
-    res.set_icon("./icons/icons8-setup-64.ico");
+    if cfg!(target_os = "windows") {
+      let mut res = winres::WindowsResource::new();
+      res.set_icon("./icons/icons8-setup-64.ico");
+      res.set_manifest(r#"
+      <assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
+        <trustInfo xmlns="urn:schemas-microsoft-com:asm.v3">
+          <security>
+            <requestedPrivileges>
+              <requestedExecutionLevel level="asInvoker" uiAccess="false"/>
+            </requestedPrivileges>
+          </security>
+        </trustInfo>
+      </assembly>
+    "#);
     res.compile().unwrap();
 
-    /*
-      link vcruntime
-
-      could cross-compile instead of this but skia is used as software renderer 
-      by egui which is does not support cross-compliation
-     */
     static_vcruntime::metabuild();
   }
 }
