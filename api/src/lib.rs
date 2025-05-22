@@ -22,7 +22,7 @@ impl Meta {
 
         Meta {
             app,
-            repository: repository,
+            repository,
         }
     }
 }
@@ -131,8 +131,8 @@ fn execute_blocking(product_meta: &Product, settings: WorkloadKind, state_callba
         state_callback(f.state_cloned.clone().into());
     }));
 
-    let out = executor.runtime.block_on(executor.handle);
+    executor.runtime.block_on(executor.handle).unwrap();
+    
     executor.app.get_context().lock().unsubscribe(sub_id);
-
     ON_WORK.store(false, std::sync::atomic::Ordering::Relaxed);
 }

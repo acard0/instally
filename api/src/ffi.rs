@@ -83,7 +83,7 @@ impl CPackageVersioning {
 
 #[repr(C)]
 #[derive(Debug, Clone)]
-pub struct CAppState {
+pub struct CAppState { // TODO: caller side buffer
     pub state: *const i8,
     pub state_progress: f32,
     pub result: *const i8,

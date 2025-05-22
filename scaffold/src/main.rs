@@ -2,23 +2,22 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 
 use core::panic;
-use directories::UserDirs;
-use instally_core::{definitions::{app::InstallyApp, product::Product}, factory::WorkloadKind, helpers::{self, serializer}, workloads::{installer::InstallerOptions, uninstaller::UninstallerOptions, updater::UpdaterOptions}};
+use instally_core::{definitions::{app::InstallyApp, product::Product}, factory::WorkloadKind, helpers::serializer, workloads::{installer::InstallerOptions, uninstaller::UninstallerOptions, updater::UpdaterOptions}};
 
 mod factory;
 mod app;
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    std::panic::set_hook(Box::new(move |err| {
-        let directories = UserDirs::new().unwrap();
-        let log_path = directories.desktop_dir().unwrap().join(".crash_report.log");
-        helpers::file::write_all_file(&mut helpers::file::open_create(log_path).unwrap(), format!("{:?}", err).as_bytes()).unwrap();
-    }));
-    
+async fn main() -> Result<(), Box<dyn std::error::Error>> { 
     let rust_log = std::env::var("RUST_LOG").unwrap_or("info".into()); 
     std::env::set_var("RUST_LOG", rust_log);  
-    env_logger::init();
+    std::env::set_var("RUST_BACKTRACE", "1"); 
+    _= env_logger::try_init();
+
+    if std::env::args().any(|a| a == "--debug") {
+        _= instally_core::sys::alloc_console();
+        log::set_max_level(log::LevelFilter::Trace);
+    }
 
     let template_result: Result<Product, serializer::SerializationError> = serializer::from_json(PAYLOAD.strip_prefix("###/PAYLOAD/###").unwrap());
     let product = match template_result {
@@ -37,11 +36,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             log::info!("Payload Product is not valid and we are in debug env. Using dummy product for testing.");
             Product::from_template(
                 Product::new(
-                    "Wulite Beta",
+                    "Tutucu Unity",
                     "@{App.Name}",
                     "liteware.io",
                     "https://liteware.io",
-                    "https://cdn.liteware.xyz/downloads/wulite/beta/",
+                    "https://cdn.liteware.xyz/downloads/tutucu/beta/",
                     "global_script.js",
                     "@{Directories.User.Home}\\AppData\\Local\\@{App.Publisher}\\@{App.Name}",
                 )
@@ -71,12 +70,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 struct Args {
     workload_type: WorkloadKind,
     silent: bool,
+    debug: bool,
 }
 
 async fn parse_args(app: &InstallyApp) -> Args {
     let mut args = std::env::args();
     let mut command = None;
     let mut silent = false;
+    let mut debug = false;
     let mut target_packages = None;
     let mut target_local_packages = None;
     
@@ -91,6 +92,7 @@ async fn parse_args(app: &InstallyApp) -> Args {
                 panic!("Multiple commands specified!");
             },
             "--silent" => silent = true,
+            "--debug" => debug = true,
             "--packages" => {
                 args.by_ref().take_while(|a| !a.starts_with('-')).for_each(|a| {
                     let remote = app.get_repository().get_package(&a)
@@ -120,6 +122,7 @@ async fn parse_args(app: &InstallyApp) -> Args {
     Args {
         workload_type: workload,
         silent,
+        debug
     }
 }
 
