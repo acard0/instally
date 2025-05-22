@@ -1,5 +1,5 @@
 
-use std::{ops::{Deref, DerefMut}, path::{Path, PathBuf}};
+use std::{fmt, ops::{Deref, DerefMut}, path::{Path, PathBuf}};
 
 use serde::{Deserialize, Serialize};
 
@@ -192,6 +192,21 @@ pub struct PackageInstallation {
     pub operations: OperationHistory
 }
 
+impl fmt::Display for PackageInstallation {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{} ({}) - Version: {}, Installed: {}, Updated: {}, Default: {}",
+            self.display_name,
+            self.name,
+            self.version,
+            self.installed_at.format("%Y-%m-%d %H:%M:%S"),
+            self.updated_at.format("%Y-%m-%d %H:%M:%S"),
+            self.default
+        )
+    }
+}
+
 impl PackageInstallation {
     fn from_package(package: &Package) -> PackageInstallation {
         PackageInstallation {
@@ -206,13 +221,59 @@ impl PackageInstallation {
     }
 }
 
+impl fmt::Display for Package {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{} ({}) - Version: {}, Released: {}, Size: {} bytes, Default: {}",
+            self.display_name,
+            self.name,
+            self.version,
+            self.release_date,
+            self.size,
+            self.default
+        )
+    }
+}
+
+#[derive(Debug, Default)]
 pub struct PackagePair {
     pub local: PackageInstallation,
     pub remote: Package
 }
 
+impl fmt::Display for PackagePair {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Local: [{}]\nRemote: [{}]", self.local, self.remote)
+    }
+}
+
+#[derive(Debug, Default)]
 pub struct CrossCheckSummary {
     pub map: Vec<PackagePair>,
     pub updates: Vec<PackagePair>,
     pub not_installed: Vec<Package>
+}
+
+impl fmt::Display for CrossCheckSummary {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(f, "Summary:")?;
+
+        writeln!(f, "\nMapped Packages:")?;
+        for pair in &self.map {
+            writeln!(f, "{}", pair)?;
+        }
+
+        writeln!(f, "\nUpdates Available:")?;
+        for pair in &self.updates {
+            writeln!(f, "{}", pair)?;
+        }
+
+        writeln!(f, "\nPackages Not Installed:")?;
+        for pkg in &self.not_installed {
+            writeln!(f, "{}", pkg)?;
+        }
+
+        Ok(())
+    }
 }
