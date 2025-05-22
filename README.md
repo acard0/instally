@@ -11,6 +11,6 @@ work in progress.
   - update check, uninstall, add/remove package
 [x] scripting layer
   - events after/before | install/update/uninstall etc
-[] tests
+[x] tests
 [] docs
 ```
