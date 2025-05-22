@@ -1,22 +1,22 @@
-use std::{ffi::{c_char, CStr}, cmp::Ordering};
+use std::{cmp::Ordering, ffi::{c_uchar, CStr, CString}};
 
 use instally_core::{definitions::{package::Package, summary::PackagePair}, helpers::{like::CStringLike, versioning::version_compare}, definitions::context::AppContext};
 
 #[repr(C)]
 pub struct CallResult<T> {
-    pub result: T,
-    pub error: *const c_char,
+    pub result: *mut T,
+    pub error: *const c_uchar,
 }
 
 impl<T> CallResult<T> {
     pub fn new(result: T, error: Option<&str>) -> Self {
         let err = match error {
             None => std::ptr::null(),
-            Some(s) => s.as_c_char_ptr()
+            Some(s) => CString::new(s).unwrap().as_bytes_with_nul().as_ptr()
         };
 
         CallResult { 
-            result,
+            result: Box::into_raw(Box::new(result)),
             error: err
         }
     }
