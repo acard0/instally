@@ -4,7 +4,7 @@ use std::{ffi::{c_char, CStr}, mem::ManuallyDrop, ptr};
 pub struct ByteBuffer {
     ptr: *mut u8,
     length: i32,
-    capacity: i32,
+    capacity: i32
 }
 
 impl ByteBuffer {
@@ -20,7 +20,7 @@ impl ByteBuffer {
         Self {
             ptr: v.as_mut_ptr(),
             length,
-            capacity,
+            capacity
         }
     }
 
@@ -106,10 +106,5 @@ impl ByteBuffer {
             let cap_count = cap_bytes / elem_size;
             unsafe { Vec::from_raw_parts(self.ptr as *mut T, count, cap_count) }
         }
-    }
-
-    /// Destroy this buffer by dropping its contents. If null or length=0, does nothing.
-    pub fn destroy(self) {
-        drop(self.destroy_into_vec());
     }
 }
