@@ -1,14 +1,13 @@
 
 [workspace]
+resolver = "2"
 members = ["api", "core", "scaffold", "binarygen", "repogen"] 
 
 [profile.release]
-strip = true  # Automatically strip symbols from the binary.
-opt-level = "z"  # Optimize for size.
-lto = true # Enable Link Time Optimization (LTO)
-codegen-units = 1 # Reduce Parallel Code Generation Units to Increase Optimization
-panic = "abort" # Smaller panic implementation
+strip = true
+opt-level = "z"
+lto = true
 
 [workspace.dependencies]
-rust-i18n = { git = "https://github.com/acard0/rust-i18n", rev = "92cfa03", features = [ "rust-i18n-extract", "clap", "anyhow", "quote", "itertools" ] }
+rust-i18n = { git = "https://github.com/acard0/rust-i18n", rev = "69fe943", features = [ "rust-i18n-extract", "clap", "anyhow", "quote", "itertools" ] }
 struct_field = { git = "https://github.com/acard0/struct_field", rev = "0b947e8" }

@@ -16,27 +16,27 @@ impl Script {
     }
 
     pub fn invoke_before_installition(&self) -> Result<(), IJSError> { 
-        self.ctx.eval_raw::<()>("Installer.on_before_installition();").map_err(|err| IJSError::Execution(format!("{:?}", err)))
+        self.ctx.eval::<()>("Installer.on_before_installition();").map_err(|err| IJSError::Execution(format!("{:?}", err)))
     }
 
     pub fn invoke_after_installition(&self) -> Result<(), IJSError> { 
-        self.ctx.eval_raw::<()>("Installer.on_after_installition();").map_err(|err| IJSError::Execution(format!("{:?}", err)))
+        self.ctx.eval::<()>("Installer.on_after_installition();").map_err(|err| IJSError::Execution(format!("{:?}", err)))
     }
 
     pub fn invoke_before_update(&self)  -> Result<(), IJSError> {
-        self.ctx.eval_raw::<()>("Installer.on_before_update();").map_err(|err| IJSError::Execution(format!("{:?}", err)))
+        self.ctx.eval::<()>("Installer.on_before_update();").map_err(|err| IJSError::Execution(format!("{:?}", err)))
     }
 
     pub fn invoke_after_update(&self) -> Result<(), IJSError> { 
-        self.ctx.eval_raw::<()>("Installer.on_after_update();").map_err(|err| IJSError::Execution(format!("{:?}", err)))
+        self.ctx.eval::<()>("Installer.on_after_update();").map_err(|err| IJSError::Execution(format!("{:?}", err)))
     }
 
     pub fn invoke_before_uninstallition(&self) -> Result<(), IJSError> {
-        self.ctx.eval_raw::<()>("Installer.on_before_uninstallition();").map_err(|err| IJSError::Execution(format!("{:?}", err)))
+        self.ctx.eval::<()>("Installer.on_before_uninstallition();").map_err(|err| IJSError::Execution(format!("{:?}", err)))
     }
 
     pub fn invoke_after_uninstallition(&self) -> Result<(), IJSError> {
-        self.ctx.eval_raw::<()>("Installer.on_after_uninstallition();").map_err(|err| IJSError::Execution(format!("{:?}", err)))
+        self.ctx.eval::<()>("Installer.on_after_uninstallition();").map_err(|err| IJSError::Execution(format!("{:?}", err)))
     }
     
     pub fn free(&self) {

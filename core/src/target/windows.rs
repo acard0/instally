@@ -1,4 +1,3 @@
-use chrono::Datelike;
 use windows::core::Interface;
 use windows::Win32::Foundation::HANDLE;
 use windows::Win32::Foundation::WIN32_ERROR;
@@ -61,6 +60,8 @@ pub fn break_symlink_file<P: AsRef<Path>>(link_dir: P, link_name: &str) -> Resul
 }
 
 pub fn create_app_entry(app: &InstallyApp, maintenance_tool_name: &str) -> Result<(), AppEntryError> {
+    //TODO: disabled due to defender recognizing this as malware.
+    /*
     let path = Path::new("Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\").join(&app.get_product().name);
     log::info!("Creating app entry at path {:?}", path);
     
@@ -82,6 +83,7 @@ pub fn create_app_entry(app: &InstallyApp, maintenance_tool_name: &str) -> Resul
     key.set_value("URLUpdateInfo", &app.get_product().product_url)?;
     key.set_value("InstallLocation", &target_dir.to_str().unwrap().to_owned())?;
     key.set_value("UninstallString", &format!(r#"{} /uninstall"#, maintenance_tool_path.to_str().unwrap()))?;
+     */
     
     Ok(())
 }
