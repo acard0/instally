@@ -7,7 +7,7 @@ pub fn run(app: InstallyApp, settings: WorkloadKind, do_spawn_ui: bool) -> Execu
     let executor = instally_core::factory::run(app.clone(), settings, None);
     
     if do_spawn_ui {
-        app::create(app).unwrap();
+        app::create(app).expect("failed to spawn iced gui");
     }
 
     executor

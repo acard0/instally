@@ -2,6 +2,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 
 use core::panic;
+use std::{backtrace::Backtrace, thread, time::Duration};
 use instally_core::{definitions::{app::InstallyApp, product::Product}, factory::WorkloadKind, helpers::serializer, workloads::{installer::InstallerOptions, uninstaller::UninstallerOptions, updater::UpdaterOptions}};
 
 mod factory;
@@ -18,6 +19,31 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         _= instally_core::sys::alloc_console();
         log::set_max_level(log::LevelFilter::Trace);
     }
+
+    std::panic::set_hook(Box::new(|info| {
+        let payload = info.payload();
+        let panic_msg = if let Some(s) = payload.downcast_ref::<&str>() {
+            *s
+        } else if let Some(s) = payload.downcast_ref::<String>() {
+            s.as_str()
+        } else {
+            "Unknown panic payload"
+        };
+
+        let location = if let Some(loc) = info.location() {
+            format!("{}:{}", loc.file(), loc.line())
+        } else {
+            "<unknown>".into()
+        };
+
+        let bt = Backtrace::capture();
+        log::error!(
+            "thread panicked at '{}' [{}]\nBacktrace:\n{:?}",
+            panic_msg, location, bt
+        );
+
+        thread::sleep(Duration::from_secs(5));
+    }));
 
     let template_result: Result<Product, serializer::SerializationError> = serializer::from_json(PAYLOAD.strip_prefix("###/PAYLOAD/###").unwrap());
     let product = match template_result {
