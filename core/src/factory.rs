@@ -73,7 +73,7 @@ fn spawn_workload(app: &InstallyApp, settings: WorkloadKind) -> tokio::task::Joi
             uninstaller(UninstallerWrapper::new_with_opts(app.clone(), r))
         },
         WorkloadKind::Error(opt, err) => {
-            noop(err, NoopWrapper::new_with_opts(app.clone(), opt))
+            failure(err, NoopWrapper::new_with_opts(app.clone(), opt))
         }
     };
 
@@ -167,15 +167,15 @@ fn uninstaller(mut wrapper: UninstallerWrapper) -> tokio::task::JoinHandle<Workl
     })
 }
 
-fn noop(err: ErrorDetails, mut wrapper: NoopWrapper) -> tokio::task::JoinHandle<WorkloadResult> {
+fn failure(err: ErrorDetails, mut wrapper: NoopWrapper) -> tokio::task::JoinHandle<WorkloadResult> {
     tokio::spawn(async move { 
-        log::info!("Could not initiate a workload.");
+        log::info!("Could not initiate a workload. {:?}", err);
 
         let workload_result = wrapper.run().await;
         let finalize_result = wrapper.finalize(workload_result.is_err()).wait(); // TODO: impl send + sync for err type
 
         let result = WorkloadResult::Error(err);
-        wrapper.app.set_workload_state(NoopWorkloadState::Done);
+        wrapper.app.set_workload_state(NoopWorkloadState::Failure);
         wrapper.app.set_result(&result);
         result
     })

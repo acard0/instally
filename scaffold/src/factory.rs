@@ -1,5 +1,5 @@
 
-use instally_core::{definitions::app::InstallyApp, factory::{Executor, WorkloadKind}, workloads::noop::NoopOptions};
+use instally_core::{definitions::{app::InstallyApp, product::Product}, factory::{Executor, WorkloadKind}, workloads::noop::NoopOptions};
 
 use crate::app;
 
@@ -13,6 +13,6 @@ pub fn run(app: InstallyApp, settings: WorkloadKind, do_spawn_ui: bool) -> Execu
     executor
 }
 
-pub fn failed(err: rust_i18n::error::Error) -> Executor {
-    run(InstallyApp::default(), WorkloadKind::Error(NoopOptions::default(), err.get_details().clone()), true)
+pub fn failed(product: &Product, err: rust_i18n::error::Error) -> Executor {
+    run(InstallyApp::default_with_product(product), WorkloadKind::Error(NoopOptions::default(), err.get_details().clone()), true)
 }

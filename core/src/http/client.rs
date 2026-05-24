@@ -12,6 +12,9 @@ pub enum HttpStreamError {
     #[error("network")]
     Network(#[from] reqwest::Error),
 
+    #[error("status-code")]
+    StatusCode(u16),
+
     #[error("content-length")]
     ContentLength,
 
@@ -39,11 +42,14 @@ where
     F: FnMut(f32),
     P: FnMut(Bytes) -> Result<(), HttpStreamError>,
 {
-    // Reqwest setup
     let response = reqwest::Client::new()
         .get(url)
         .send()
         .await?;
+
+    if response.status().is_success() == false {
+        return Err(HttpStreamError::StatusCode(response.status().as_u16())) 
+    }
 
     let total_size = match response.content_length() {
         Some(r) => r,
@@ -84,7 +90,7 @@ where
     let mut result_string = String::new();
     let result_ref = &mut result_string;
 
-    download(url, progress_callback, move |chunk| {
+    let result = download(url, progress_callback, move |chunk| {
         let chunk_str = String::from_utf8(chunk.to_vec())?;
         result_ref.push_str(&chunk_str);
         Ok(())

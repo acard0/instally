@@ -42,7 +42,7 @@ impl TemplateFormat {
         format_string(template, &self.replacements, &self.pattern)
     }
 
-    pub fn iter(&self) -> std::collections::hash_map::Iter<String, String> {
+    pub fn iter(&self) -> std::collections::hash_map::Iter<'_, String, String> {
         self.replacements.iter()
     }
 }

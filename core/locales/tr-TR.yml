@@ -2,17 +2,19 @@
 messages.hello: Merhaba
 messages.hello.x: Merhaba {0}
 
-states.fetching-repository: "Uzak depo bilgisi getiriliyor: '{0}'"
-states.downloading: "İndiriliyor: '{0}'"
-states.decompressing: "Sıkıştırma açılıyor: '{0}'"
-states.installing: "Kuruluyor: '{0}'"
-states.compressing: "Sıkıştırılıyor: '{0}'"
-states.deleting-files: Dosyalar siliniyor
+states.fetching-repositoryOfX: "Uzak depo bilgisi getiriliyor: '{0}'"
+states.downloadingX: "İndiriliyor: '{0}'"
+states.decompressingX: "Sıkıştırma açılıyor: '{0}'"
+states.installingX: "Kuruluyor: '{0}'"
+states.compressingX: "Sıkıştırılıyor: '{0}'"
+states.deleting-files: "Dosyalar siliniyor"
+states.removing-outdated-packageX: "Eski sürüm siliniyor, {0}"
 
-states.interrupted.by: "Hata oluştu: '{0}'"
+states.interrupted.byX: "Hata oluştu, {0}"
 states.interrupted.by-user: Kullanıcı tarafından iptal edildi
 
 states.completed: "Tamamlandı"
+states.failed: "Hata oluştu"
 
 ### words
 abort: İptal et
@@ -31,35 +33,42 @@ open: Aç
 code: Kod
 
 ### errors
-http-stream-error:
-  network: "Bir ağ hatası oluştu."
-  network.suggestion: "İnternet bağlantınızı kontrol edin."
-
-  content-length: "Bir ağ hatası oluştu."
-  content-length.suggestion: "İnternet bağlantınızı kontrol edin."
-
-  pull-to-file:
-    io-eror:
-      permission-denied: "Bir dosya indirilirken erişim izni reddedildi."
-      permission-denied.suggestion: "Uygulamayı yönetici olarak çalıştırmayı deneyin."
-
-  pull-to-string-utf8: "Depo bilgileri okunurken bir kodlama hatası oluştu."
-
-serialization-error:
-  json-error: "Bir serileştirme hatası oluştu."
-
 script-error:
   http-stream-eror:
-    network: "Kurulum için gerekli betik ağ üzerinden getirilirken bir hata oluştu."
+    network: "Kurulum için gerekli betik indirilirken hata oluştu."
     network.suggestion: "İnternet bağlantınızı kontrol edin."
 
-    content-length: "Kurulum için gerekli betik ağ üzerinden getirilirken bir hata oluştu."
-    content-length.suggestion: "İnternet bağlantınızı kontrol edin."
+    status-code: "Kurulum için gerekli betik indirme işlemi sunucu tarafından reddedildi."
+    status-code.suggestion: "Daha sonra tekrar deneyin."
 
-    pull-to-string-utf8: "Kurulum için gerekli betik ağ üzerinden getirilirken bir kodlama hatası oluştu."
-    pull-to-string-utf8.suggestion: "İnternet bağlantınızı kontrol edin."
+    content-length: "Kurulum için gerekli betik indirilirken sunucu taraflı bir hata oluştu."
+    content-length.suggestion: "Daha sonra tekrar deneyin."
+
+    pull-to-string-utf8: "Kurulum için gerekli betik indirilirken bir kodlama hatası oluştu."
+    pull-to-string-utf8.suggestion: "Daha sonra tekrar deneyin."
 
   ijs-eror: "Kurulum betiği çalışıtılırken bir hata ile karşılaşıldı."
+
+repository-fetch-error:
+  http-stream-error:
+    network: "Kurulum bilgileri indirilirken hata oluştu."
+    network.suggestion: "İnternet bağlantınızı kontrol edin."
+
+    status-code: "Kurulum bilgileri indirme işlemi sunucu tarafından reddedildi."
+    status-code.suggestion: "Daha sonra tekrar deneyin."
+
+    content-length: "Kurulum bilgileri indirilirken sunucu taraflı bir hata oluştu."
+    content-length.suggestion: "Daha sonra tekrar deneyin."
+
+    pull-to-string-utf8: "Kurulum bilgileri indirilirken bir kodlama hatası oluştu."
+    pull-to-string-utf8.suggestion: "Daha sonra tekrar deneyin."
+
+  serialization-error:
+    io-error: "An i/o error occcured while processing repository."
+    io-error.suggestion: "Restart your computer."
+
+    engine: "A serialization error occured while processing repository."
+    engine.suggestion: "Try again later."
 
 archive-error:
   sha-1-eror:
@@ -74,9 +83,29 @@ archive-error:
   unsupported: "Kurulum sırasında desteklenmeyen paket dosyasıyla karşılaşıldı."
   invalid-password: "Paket dosyası için geçersiz şifre girildi, kurulum başarısız oldu."
 
+http-stream-error:
+  network: "Bir ağ hatası oluştu."
+  network.suggestion: "İnternet bağlantınızı kontrol edin."
+
+  status-code: "Uzak sunucu taraftlı bir hata oluştu."
+  status-code.suggestion: "Daha sonra tekrar deneyin."
+
+  content-length: "Okuma işlemi sırasında uzak sunucu taraftlı bir hata oluştu."
+  content-length.suggestion: "Daha sonra tekrar deneyin."
+
+  pull-to-file:
+    io-eror:
+      permission-denied: "Bir dosya indirilirken erişim izni reddedildi."
+      permission-denied.suggestion: "Uygulamayı yönetici olarak çalıştırmayı deneyin."
+
+  pull-to-string-utf8: "Ağ üzerinden okuma işlemi hata ile sonuçlandı."
+
+serialization-error:
+  json-error: "Bir serileştirme hatası oluştu."
+
 symlink-error:
   os-eror: "Sembolik bağlantı girişi yönetilemedi, işletim sistemi hatası oluştu."
-  
+
   io-eror:
     permission-denied: "Sembolik bağlantı girişi yönetilemedi, izin reddedildi."
     permission-denied.suggestion: "Uygulamayı yönetici olarak çalıştırmayı deneyin."
@@ -100,7 +129,7 @@ actions.create-maintenancetool-operation: "Bakım aracı oluşturma işlemi"
 
 ## test
 greetings: Selamlar!
-test_of: '{0} ve {1} testi'
+test_of: "{0} ve {1} testi"
 hello: Merhaba
 hellox: Merhaba {0}
 messages:

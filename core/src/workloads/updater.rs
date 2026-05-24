@@ -9,6 +9,7 @@ use rust_i18n::error::{Error, ErrorDetails};
 
 use crate::definitions::script::ScriptOptional;
 use crate::extensions::future::FutureSyncExt;
+use crate::helpers::file::IoError;
 use crate::*;
 use crate::definitions::context::AppWrapper;
 
@@ -53,8 +54,10 @@ impl Workload for UpdaterWrapper {
 
 impl UpdaterWrapper {
     pub(self) async fn update(&self) -> Result<(), PackageUpdateError> {
-        let summary = self.app.get_summary();  
+        log::info!("Starting to update {}", &self.app.get_product().name);
+        log::info!("Target directory {:?}", &self.app.get_product().get_relative_target_directory());
 
+        let summary = self.app.get_summary();  
         let global = self.app.download_global_script().await?;
         global.if_exist(|s| Ok(s.invoke_before_update()?))?;
 
@@ -63,9 +66,13 @@ impl UpdaterWrapper {
 
         let state = summary.cross_check(&repository.packages);
 
-        log::info!("Starting to update {}", &self.app.get_product().name);
         log::info!("Installed packages: {}", summary.packages.iter().map(|e| e.display_name.clone()).collect::<Vec<_>>().join(", "));
         log::info!("Packages that are outdated: {}", state.updates.iter().map(|e| e.local.display_name.clone()).collect::<Vec<_>>().join(", "));
+
+        if state.updates.len() != 0 {
+            helpers::process::terminate_processes_under_folder(self.app.get_product().get_relative_target_directory())
+                .map_err(|err| Error::from(IoError::from(err)))?;
+        }
 
         for pair in state.updates {
             let local = pair.local;
@@ -115,19 +122,19 @@ impl Display for UpdaterWorkloadState {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             UpdaterWorkloadState::FetchingRemoteTree(s) => {
-                write!(f, "{:?}", t!("states.fetching-repository", [s]))
+                write!(f, "{:?}", t!("states.fetching-repositoryOfX", [s]))
             },
             UpdaterWorkloadState::DownloadingComponent(s) => {
-                write!(f, "{:?}", t!("states.downloading", [s]))
+                write!(f, "{:?}", t!("states.downloadingX", [s]))
             },
             UpdaterWorkloadState::RemovingOutdatedComponent(s) => {
-                write!(f, "{:?}", t!("states.removing-outdated-package", [s]))
+                write!(f, "{:?}", t!("states.removing-outdated-packageX", [s]))
             }, 
             UpdaterWorkloadState::InstallingComponent(s) => {
-                write!(f, "{:?}", t!("states.installing", [s]))
+                write!(f, "{:?}", t!("states.installingX", [s]))
             },
             UpdaterWorkloadState::Interrupted(e) => {
-                write!(f, "{:?}", t!("states.interrupted.by-error", [e.to_string()]))
+                write!(f, "{:?}", t!("states.interrupted.byX", [e.to_string()]))
             },
             UpdaterWorkloadState::Aborted => {
                 write!(f, "{:?}", t!("states.interrupted.by-user"))

@@ -213,7 +213,7 @@ impl OperationRecord {
     }
 
     /// Reconstructs the concrete Operation type this record represents
-    pub fn into_operation(&self, package: Option<&Package>) -> Result<Operation, rust_i18n::error::Error> {
+    pub fn into_operation(&self, package: Option<&Package>) -> Result<Operation<'_>, rust_i18n::error::Error> {
         Operation::from_record(package, &self)
     }
 }

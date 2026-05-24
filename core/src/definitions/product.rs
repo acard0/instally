@@ -56,6 +56,7 @@ impl Product{
 
     pub fn create_formatter(&self) -> TemplateFormat {
         let directories = UserDirs::new().unwrap(); 
+        let user_directory = directories.home_dir();
 
         // use transformer to ensure its valid to be stored as json
         TemplateFormat::new(Some(Box::new(|value| 
@@ -70,10 +71,10 @@ impl Product{
             .add_replacement("App.ProductUrl", &self.product_url)
             .add_replacement("App.TargetDirectory", &self.target_directory)
             .add_replacement("App.Repository", &self.repository)
-            .add_replacement("Directories.User.Home", directories.home_dir().to_str().unwrap())
-            .add_replacement("Directories.User.Documents", directories.document_dir().unwrap().to_str().unwrap())
-            .add_replacement("Directories.User.Downloads", directories.download_dir().unwrap().to_str().unwrap())
-            .add_replacement("Directories.User.Desktop", directories.desktop_dir().unwrap().to_str().unwrap())
+            .add_replacement("Directories.User.Home", user_directory.to_str().unwrap())
+            .add_replacement("Directories.User.Documents", directories.document_dir().unwrap_or(user_directory).to_str().unwrap())
+            .add_replacement("Directories.User.Downloads", directories.download_dir().unwrap_or(user_directory).to_str().unwrap())
+            .add_replacement("Directories.User.Desktop", directories.desktop_dir().unwrap_or(user_directory).to_str().unwrap())
     }
 
     pub fn get_path_to_package(&self, _package: &Package) -> std::path::PathBuf {

@@ -90,7 +90,7 @@ impl AppContext
     pub fn get_state_information_fallback(&self, fallback: &str) -> String {
         match self.get_state() {
             None => fallback.to_owned(),
-            Some(str) => str.to_string()
+            Some(str) => str
         }
     }
 

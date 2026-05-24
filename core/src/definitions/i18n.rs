@@ -14,9 +14,8 @@ impl I18n {
         }
     }
 
-    pub fn get(&self, locale: &str, key: &str) -> String {
+    pub fn get(&self, locale: &str, key: &str) -> Option<String> {
         self.loose_translation(locale, key)
-            .unwrap_or_else(|| key.to_owned())
     }
 
     fn loose_translation(&self, locale: &str, key: &str) -> Option<String> {
@@ -79,7 +78,7 @@ impl rust_i18n::Backend for I18n {
     }
 
     fn translate(&self, locale: &str, key: &str) -> Option<String> {
-        Some(self.get(locale, key))
+        self.get(locale, key)
     }
 
     fn add(&mut self, locale: &str, key: &str, value: &str) {

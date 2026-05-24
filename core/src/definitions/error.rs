@@ -81,4 +81,7 @@ pub enum PackageUpdateError {
 
     #[error("{}", .0.get_message_key())]
     Install(#[from] PackageInstallError),
+    
+    #[error("{}", .0.get_details().fullname)]
+    Other(#[from] rust_i18n::error::Error)
 }

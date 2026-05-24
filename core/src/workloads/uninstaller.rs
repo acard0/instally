@@ -4,7 +4,7 @@ use async_trait::async_trait;
 use definitions::error::PackageUninstallError;
 use rust_i18n::error::{Error, ErrorDetails};
 
-use crate::{definitions::{script::ScriptOptional, summary::PackageInstallation}, extensions::future::FutureSyncExt};
+use crate::{definitions::{script::ScriptOptional, summary::PackageInstallation}, extensions::future::FutureSyncExt, helpers::file::IoError};
 
 use crate::*;
 use crate::definitions::context::AppWrapper;
@@ -59,6 +59,12 @@ impl Workload for UninstallerWrapper {
 
 impl UninstallerWrapper {
     pub(self) async fn uninstall(&self) -> Result<(), PackageUninstallError> {
+        log::info!("Starting to uninstall {}", &self.app.get_product().name);
+        log::info!("Target directory {:?}", &self.app.get_product().get_relative_target_directory());
+
+        helpers::process::terminate_processes_under_folder(self.app.get_product().get_relative_target_directory())
+            .map_err(|err| Error::from(IoError::from(err)))?;
+
         let global = self.app.download_global_script().await?;
         global.if_exist(|s| Ok(s.invoke_before_uninstallition()?))?;
 
@@ -103,7 +109,7 @@ impl Display for UninstallerWorkloadState {
             },
 
             UninstallerWorkloadState::Interrupted(e) => {
-                write!(f, "{:?}", t!("states.interrupted.by", [e.to_string()]))
+                write!(f, "{:?}", t!("states.interrupted.byX", [e.to_string()]))
             },
 
             _ => write!(f, "{:?}", t!("states.completed"))

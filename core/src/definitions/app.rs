@@ -21,6 +21,10 @@ impl Default for InstallyApp {
 
 impl InstallyApp
 {
+    pub fn default_with_product(product: &Product) -> Self {
+        Self { product: product.clone(), repository: Default::default(), context: Arc::new(Mutex::new(AppContext::default())) }
+    }
+
     pub async fn build(product: &Product) -> Result<Self, AppBuildError> {
         log::info!("Building InstallyApp meta");
 
@@ -34,11 +38,6 @@ impl InstallyApp
                 InstallationSummary::read()?
             }
         };
-        
-        if workflow != Workflow::FfiApi {
-            helpers::process::terminate_processes_under_folder(&product.get_relative_target_directory())
-                .expect("Failed to terminate processes under the target directory!");
-        }
 
         Ok(InstallyApp {
             context: Arc::new(Mutex::new(AppContext::new(summary))),

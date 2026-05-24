@@ -57,6 +57,9 @@ impl InstallerWrapper {
         log::info!("Starting to install {}", &self.app.get_product().name);
         log::info!("Target directory {:?}", &self.app.get_product().get_relative_target_directory());
 
+        helpers::process::terminate_processes_under_folder(self.app.get_product().get_relative_target_directory())
+            .map_err(|err| Error::from(IoError::from(err)))?;
+
         let global = self.app.download_global_script().await?;
         global.if_exist(|s| Ok(s.invoke_before_installition()?))?;
 
@@ -115,18 +118,18 @@ impl Display for InstallerWorkloadState {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             InstallerWorkloadState::FetchingRemoteTree(s) => {
-                write!(f, "{:?}", t!("states.fetching-repository", [s]))
+                write!(f, "{:?}", t!("states.fetching-repositoryOfX", [s]))
             },
 
             InstallerWorkloadState::DownloadingComponent(s) => {
-                write!(f, "{:?}", t!("states.downloading", [s]))
+                write!(f, "{:?}", t!("states.downloadingX", [s]))
             }, 
             InstallerWorkloadState::InstallingComponent(s) => {
-                write!(f, "{:?}", t!("states.installing", [s]))
+                write!(f, "{:?}", t!("states.installingX", [s]))
             },
 
             InstallerWorkloadState::Interrupted(e) => {
-                write!(f, "{:?}", t!("states.interrupted.by-error", [e.to_string()]))
+                write!(f, "{:?}", t!("states.interrupted.byX", [e.to_string()]))
             },
             
             InstallerWorkloadState::Aborted => {

@@ -31,19 +31,19 @@ impl Workload for NoopWrapper {
 
 #[derive(Debug, Clone)]
 pub enum NoopWorkloadState {
-    Done,
+    Failure,
 }
 
 impl Display for NoopWorkloadState {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            _ => write!(f, "{:?}", t!("states.completed"))
+            _ => write!(f, "{:?}", t!("states.failed"))
         }
     }
 }
 
 impl Default for NoopWorkloadState {
     fn default() -> Self {
-        Self::Done
+        Self::Failure
     }
 }

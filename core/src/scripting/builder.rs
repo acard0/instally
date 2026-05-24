@@ -101,7 +101,7 @@ impl IJSContext {
         unsafe { (&*self.ctx).clone() }
     }
 
-    pub fn get_installer_j(&self) -> Result<InstallerJ, IJSError> {
+    pub fn get_installer_j(&self) -> Result<InstallerJ<'_>, IJSError> {
         let wrapper = self.get_rquickjs_context().with(|ctx| {
             Ok(Box::into_raw(Box::new(ctx.globals().get::<_, InstallerJ>("Installer")?.clone())) as usize)
         })
@@ -330,7 +330,7 @@ mod tests {
                     log(`WebView2 version: ${pv}`);
                 } catch (err) {
                     log('WebView2 is not installed. Installing...');
-                    Installer.get_and_execute(webview2_uri, [ "/silent", "/install" ], Installer.translate("states.installing", ["Microsoft WebView2"]));
+                    Installer.get_and_execute(webview2_uri, [ "/silent", "/install" ], Installer.translate("states.installingX", ["Microsoft WebView2"]));
                 }
                 log('WebView2 is installed.');
         
@@ -347,14 +347,14 @@ mod tests {
 
                 if (!netCore || !windowsDesktop) {
                     print(".NET Desktop Runtime 6.* is not installed. Installing...");
-                    Installer.get_and_execute(dotnet_desktop_runtime, [ "/install", "/quiet", "/norestart" ], Installer.translate("states.installing", ["Microsoft .NET 6 Desktop Runtime"]));
+                    Installer.get_and_execute(dotnet_desktop_runtime, [ "/install", "/quiet", "/norestart" ], Installer.translate("states.installingX", ["Microsoft .NET 6 Desktop Runtime"]));
                 } else {
                     log('.NET Desktop Runtime 6.* is installed.');
                 } 
                 
                 if (!aspNet) {
                     print(".NET AspNetCore Runtime 6.* it not installed. Installing...");
-                    Installer.get_and_execute(dotnet_aspnetcore_runtime, [ "/install", "/quiet", "/norestart" ], Installer.translate("states.installing", ["Microsoft .NET 6 AspNetCore Runtime"]));
+                    Installer.get_and_execute(dotnet_aspnetcore_runtime, [ "/install", "/quiet", "/norestart" ], Installer.translate("states.installingX", ["Microsoft .NET 6 AspNetCore Runtime"]));
                 } else {
                     log('.NET AspNetCore Runtime 6.* is installed.');
                 }

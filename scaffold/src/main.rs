@@ -8,6 +8,8 @@ use instally_core::{definitions::{app::InstallyApp, product::Product}, factory::
 mod factory;
 mod app;
 
+use instally_core::*;
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> { 
     let rust_log = std::env::var("RUST_LOG").unwrap_or("info".into()); 
@@ -19,6 +21,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         _= instally_core::sys::alloc_console();
         log::set_max_level(log::LevelFilter::Trace);
     }
+
+    let locale = locale();
+
+    println!("locale: {locale:?}");
+    println!("translate: {}", t!("messages.hello"));
 
     std::panic::set_hook(Box::new(|info| {
         let payload = info.payload();
@@ -38,7 +45,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         let bt = Backtrace::capture();
         log::error!(
-            "thread panicked at '{}' [{}]\nBacktrace:\n{:?}",
+            "thread panicked with '{}' at [{}]\nBacktrace:\n{:?}",
             panic_msg, location, bt
         );
 
@@ -77,7 +84,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let result = InstallyApp::build(&product).await;    
 
     if result.is_err() {
-        _ = factory::failed(result.err().unwrap().into())
+        _ = factory::failed(&product, result.err().unwrap().into())
     } else {
         let app = result.unwrap();
         let args = parse_args(&app).await;

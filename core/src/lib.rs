@@ -18,4 +18,4 @@ pub use target::windows as sys;
 #[cfg(not(target_os = "windows"))]
 pub use target::unix as sys;
 
-rust_i18n::i18n!("locales", backend = definitions::i18n::I18n::new());
+rust_i18n::i18n!("locales", fallback = "en-US", backend = definitions::i18n::I18n::new());

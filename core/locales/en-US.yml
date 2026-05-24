@@ -1,18 +1,21 @@
-messages.hello: Hello
-messages.hello.x: Hello {0}
+### messages
+messages.hello: "Hello"
+messages.hello.x: "Hello {0}"
 
-states.fetching-repository: "Fetching repository: '{0}'"
+states.fetching-repositoryOfX: "Fetching repository of {0}"
 
-states.downloading: "Downloading: '{0}'"
-states.decompressing: "Decompressing: '{0}'"
-states.installing: "Installing: '{0}'"
-states.compressing: "Compressing: '{0}'"
+states.downloadingX: "Downloading, {0}"
+states.decompressingX: "Decompressing, {0}"
+states.installingX: "Installing, {0}"
+states.compressingX: "Compressing, {0}"
 states.deleting-files: "Deleting files"
+states.removing-outdated-packageX: "Removing outdated package, {0}"
 
-states.interrupted.by: "Interrupted by error: '{0}'"
+states.interrupted.byX: "Failed, {0}"
 states.interrupted.by-user: "Interrupted by user"
 
 states.completed: "Completed"
+states.failed: "Operation failed"
 
 ### words
 abort: Abort
@@ -31,12 +34,65 @@ open: Open
 code: Code
 
 ### errors
+script-error:
+  http-stream-eror:
+    network: "A network error occured while reading the necessary installation script."
+    network.suggestion: "Check your internet connection."
+
+    status-code: "Remote server denied request for reading necessary script for installation."
+    status-code.suggestion: "Try again later."
+
+    content-length: "An error occurred while reading the necessary installation script."
+    content-length.suggestion: "Try again later."
+
+    pull-to-string-utf8: "An encoding error occurred while fetching the necessary installation script."
+    pull-to-string-utf8.suggestion: "Check your internet connection."
+
+  ijs-eror: "Installation script failed to execute."
+
+repository-fetch-error:
+  http-stream-error:
+    network: "A network error occured while reading the repository."
+    network.suggestion: "Check your internet connection."
+
+    status-code: "Remote server denied request for reading the repository."
+    status-code.suggestion: "Try again later."
+
+    content-length: "An error occurred while reading the repository."
+    content-length.suggestion: "Try again later."
+
+    pull-to-string-utf8: "An encoding error occurred while fetching the repository."
+    pull-to-string-utf8.suggestion: "Check your internet connection."
+
+  serialization-error:
+    io-error: "An i/o error occcured while processing repository."
+    io-error.suggestion: "Restart your computer."
+
+    engine: "A serialization error occured while processing repository."
+    engine.suggestion: "Try again later."
+
+archive-error:
+  sha-1-eror:
+    io-eror: "An i/o error occured while verifing the integrity of the package file."
+
+  io-eror:
+    permission-denied: "An I/O error occurred while installing the package, permission denied."
+    permission-denied.suggestion: "Try running the application as an administrator."
+
+  mismatching-sha-1: "Failed to verify integrity of the package file during the installation."
+  invalid: "Encountered invalid package file during the installation."
+  unsupported: "Encountered unsupported package file during the installation."
+  invalid-password: "Invalid password supplied for the package file."
+
 http-stream-error:
   network: "A network error occured."
   network.suggestion: "Check your internet connection."
 
-  content-length: "A network error occured."
-  content-length.suggestion: "Check your internet connection."
+  status-code: "Request denied by remote server."
+  status-code.suggestion: "Try again later."
+
+  content-length: "Read operation failed due to remote server error."
+  content-length.suggestion: "Try again later."
 
   pull-to-file:
     io-eror:
@@ -48,35 +104,9 @@ http-stream-error:
 serialization-error:
   json-error-eror: "A serialization error occured."
 
-script-error:
-  http-stream-eror:
-    network: "An error occurred while fetching the necessary script over the network for installation."
-    network.suggestion: "Check your internet connection."
-
-    content-length: "An error occurred while fetching the necessary script over the network for installation."
-    content-length.suggestion: "Check your internet connection."
-
-    pull-to-string-utf8: "An encoding error occurred while fetching the necessary script over the network for installation."
-    pull-to-string-utf8.suggestion: "Check your internet connection."
-
-  ijs-eror: "Installation script failed to execute."
-
-archive-error:
-  sha-1-eror:
-    io-eror: "An i/o error occured while verifing the integrity of the package file, installation failed."
-
-  io-eror:
-    permission-denied: "An I/O error occurred while installing the package, permission denied."
-    permission-denied.suggestion: "Try running the application as an administrator."
-
-  mismatching-sha-1: "Failed to verify integrity of the package file during the installation."
-  invalid: "Encountered invalid package file during the installation."
-  unsupported: "Encountered unsupported package file during the installation."
-  invalid-password: "Invalid password supplied for the package file, installation failed."
-
 symlink-error:
   os-eror: "Failed to manage symlink entry, an operating system error occurred."
-  
+
   io-eror:
     permission-denied: "Failed to manage symlink entry due to an I/O error, permission denied."
     permission-denied.suggestion: "Try running the application as an administrator."
