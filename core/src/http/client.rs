@@ -1,7 +1,8 @@
 
 use futures::StreamExt;
-use std::{fs::File, cmp::min, io::Write};
+use std::{fs::File, io::{Seek, SeekFrom, Write}, time::Duration};
 use bytes::Bytes;
+use once_cell::sync::Lazy;
 
 use rust_i18n::error::*;
 use convert_case::*;
@@ -25,8 +26,41 @@ pub enum HttpStreamError {
     PullToString(#[from] std::string::FromUtf8Error)
 }
 
+const MAX_RETRIES: u32 = 4;
+const RETRY_BASE_DELAY: Duration = Duration::from_millis(500);
+const CONNECT_TIMEOUT: Duration = Duration::from_secs(15);
+const READ_TIMEOUT: Duration = Duration::from_secs(30);
+
+static CLIENT: Lazy<reqwest::Client> = Lazy::new(|| {
+    reqwest::Client::builder()
+        .user_agent(concat!("instally/", env!("CARGO_PKG_VERSION")))
+        .connect_timeout(CONNECT_TIMEOUT)
+        .read_timeout(READ_TIMEOUT)
+        .pool_idle_timeout(Duration::from_secs(90))
+        .build()
+        .expect("failed to build reqwest client")
+});
+
+fn is_retryable(err: &HttpStreamError) -> bool {
+    match err {
+        HttpStreamError::Network(e) => {
+            e.is_timeout() || e.is_connect() || e.is_request() || e.is_body() || e.is_decode()
+        }
+        HttpStreamError::StatusCode(code) => {
+            matches!(code, 408 | 425 | 429 | 500 | 502 | 503 | 504)
+        }
+        HttpStreamError::ContentLength => true,
+        HttpStreamError::PullToFile(_) | HttpStreamError::PullToString(_) => false,
+    }
+}
+
+fn backoff_delay(attempt: u32) -> Duration {
+    RETRY_BASE_DELAY * 2u32.pow(attempt.saturating_sub(1))
+}
+
 pub async fn test() -> Result<String, HttpStreamError> {
-    let resp = reqwest::get("http://www.gstatic.com/generate_204")
+    let resp = CLIENT.get("http://www.gstatic.com/generate_204")
+        .send()
         .await?
         .text().await?;
 
@@ -42,19 +76,15 @@ where
     F: FnMut(f32),
     P: FnMut(Bytes) -> Result<(), HttpStreamError>,
 {
-    let response = reqwest::Client::new()
-        .get(url)
+    let response = CLIENT.get(url)
         .send()
         .await?;
 
     if response.status().is_success() == false {
-        return Err(HttpStreamError::StatusCode(response.status().as_u16())) 
+        return Err(HttpStreamError::StatusCode(response.status().as_u16()))
     }
 
-    let total_size = match response.content_length() {
-        Some(r) => r,
-        _ => Err(HttpStreamError::ContentLength)?
-    };
+    let total_size = response.content_length().unwrap_or(0);
 
     let mut downloaded: u64 = 0;
     let mut stream = response.bytes_stream();
@@ -64,37 +94,74 @@ where
 
         process_chunk(chunk.clone())?;
 
-        downloaded = min(downloaded + (chunk.len() as u64), total_size);
-        let progress = (downloaded as f32 / total_size as f32) * 100.0;
-        progress_callback(progress);
+        downloaded += chunk.len() as u64;
+        if total_size > 0 {
+            let progress = (downloaded as f32 / total_size as f32) * 100.0;
+            progress_callback(progress.clamp(0.0, 100.0));
+        }
     }
 
     Ok(())
 }
 
-pub async fn get_file<F>(url: &str, file: &mut File, progress_callback: F) -> Result<(), HttpStreamError>
+/// Downloads `url` into `file`, retrying transient failures with backoff.
+pub async fn get_file<F>(url: &str, file: &mut File, mut progress_callback: F) -> Result<(), HttpStreamError>
 where
     F: FnMut(f32),
 {
-    download(url, progress_callback, move |chunk| {
-        file.write_all(&chunk).or_else(|err| {
-            Err(HttpStreamError::PullToFile(err))?
-        })
-    }).await
+    let mut attempt: u32 = 0;
+    loop {
+        file.set_len(0)?;
+        file.seek(SeekFrom::Start(0))?;
+
+        let result = download(url, &mut progress_callback, |chunk| {
+            file.write_all(&chunk).map_err(HttpStreamError::PullToFile)
+        }).await;
+
+        match result {
+            Ok(()) => {
+                file.flush().map_err(HttpStreamError::PullToFile)?;
+                return Ok(());
+            }
+            Err(err) if is_retryable(&err) && attempt < MAX_RETRIES => {
+                attempt += 1;
+                let delay = backoff_delay(attempt);
+                log::warn!("Download of '{}' failed (attempt {}/{}): {}. Retrying in {:?}.", url, attempt, MAX_RETRIES, err, delay);
+                progress_callback(0.0);
+                tokio::time::sleep(delay).await;
+            }
+            Err(err) => return Err(err),
+        }
+    }
 }
 
-pub async fn get_text<F>(url: &str, progress_callback: F) -> Result<String, HttpStreamError>
+/// Downloads `url` as a UTF-8 string, retrying transient failures with backoff.
+pub async fn get_text<F>(url: &str, mut progress_callback: F) -> Result<String, HttpStreamError>
 where
     F: FnMut(f32),
 {
-    let mut result_string = String::new();
-    let result_ref = &mut result_string;
+    let mut attempt: u32 = 0;
+    loop {
+        let mut buffer: Vec<u8> = Vec::new();
 
-    let result = download(url, progress_callback, move |chunk| {
-        let chunk_str = String::from_utf8(chunk.to_vec())?;
-        result_ref.push_str(&chunk_str);
-        Ok(())
-    }).await?;
+        let result = {
+            let buffer = &mut buffer;
+            download(url, &mut progress_callback, |chunk| {
+                buffer.extend_from_slice(chunk.as_ref());
+                Ok(())
+            }).await
+        };
 
-    Ok(result_string)
+        match result {
+            Ok(()) => return String::from_utf8(buffer).map_err(HttpStreamError::PullToString),
+            Err(err) if is_retryable(&err) && attempt < MAX_RETRIES => {
+                attempt += 1;
+                let delay = backoff_delay(attempt);
+                log::warn!("Fetch of '{}' failed (attempt {}/{}): {}. Retrying in {:?}.", url, attempt, MAX_RETRIES, err, delay);
+                progress_callback(0.0);
+                tokio::time::sleep(delay).await;
+            }
+            Err(err) => return Err(err),
+        }
+    }
 }
