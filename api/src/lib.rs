@@ -17,7 +17,7 @@ pub struct Meta {
 impl Meta {
     pub fn get() -> Self {
         let product = Product::read().unwrap();
-        let app = InstallyApp::build(&product).wait().unwrap();
+        let app = InstallyApp::build_with_remote_repository(&product).wait().unwrap();
         let repository = app.get_repository().clone();
 
         Meta {
@@ -74,13 +74,9 @@ pub unsafe extern "C" fn apply_updates(m_packages: *mut ByteBuffer, state_callba
     log::info!("Appliying update(s), target package(s) are: {:?}", packages);
 
     let meta = Meta::get();
-    let target_packages = meta.app.get_summary().packages.iter()
-        .filter(|f| packages.iter().any(|p| p == &f.name))
-        .cloned().collect::<Vec<_>>();
-
     let result = execute_blocking(
         &meta.app.get_product(),
-        WorkloadKind::Updater(UpdaterOptions { target_packages: Some(target_packages) }),
+        WorkloadKind::Updater(UpdaterOptions { target_packages: Some(packages) }),
         state_callback
     );
 
@@ -97,13 +93,9 @@ pub unsafe extern "C" fn remove_package(m_packages: *mut ByteBuffer, state_callb
 
     let meta = Meta::get();
 
-    let target_packages = meta.app.get_summary().packages.iter()
-        .filter(|f| packages.iter().any(|p| p == &f.name))
-        .cloned().collect::<Vec<_>>();
-
     let result = execute_blocking(
         &meta.app.get_product(),
-        WorkloadKind::Uninstaller(UninstallerOptions { target_packages: Some(target_packages) }),
+        WorkloadKind::Uninstaller(UninstallerOptions { target_packages: Some(packages) }),
         state_callback
     );
 
@@ -119,10 +111,6 @@ pub unsafe extern "C" fn install_package(m_packages: *mut ByteBuffer, state_call
     log::info!("Target packages are {:?}", packages);
 
     let meta = Meta::get();
-
-    let packages = meta.repository.packages.iter()
-        .filter(|f| packages.contains(&f.name))
-        .cloned().collect::<Vec<Package>>();
 
     let result = execute_blocking(
         &meta.app.get_product(),

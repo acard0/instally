@@ -80,20 +80,22 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             ).unwrap()
         }
     };
-    
-    let result = InstallyApp::build(&product).await;    
 
-    if result.is_err() {
-        _ = factory::failed(&product, result.err().unwrap().into())
-    } else {
-        let app = result.unwrap();
-        let args = parse_args(&app).await;
-        _ = factory::run(
-            app,
-            args.workload_type,
-            !args.silent
-        ).handle.await;
-    }
+    let app = match InstallyApp::new(&product) {
+        Ok(app) => app,
+        Err(err) => {
+            _ = factory::failed(&product, err.into());
+            log::info!("Exit(0)");
+            return Ok(());
+        }
+    };
+
+    let args = parse_args();
+    _ = factory::run(
+        app,
+        args.workload_type,
+        !args.silent
+    ).handle.await;
 
     log::info!("Exit(0)");
     Ok(())
@@ -106,14 +108,13 @@ struct Args {
     debug: bool,
 }
 
-async fn parse_args(app: &InstallyApp) -> Args {
+fn parse_args() -> Args {
     let mut args = std::env::args();
     let mut command = None;
     let mut silent = false;
     let mut debug = false;
-    let mut target_packages = None;
-    let mut target_local_packages = None;
-    
+    let mut target_packages: Option<Vec<String>> = None;
+
     while let Some(arg) = args.next() {
         match arg.as_str() {
             x if x.starts_with('/') => {
@@ -128,27 +129,17 @@ async fn parse_args(app: &InstallyApp) -> Args {
             "--debug" => debug = true,
             "--packages" => {
                 args.by_ref().take_while(|a| !a.starts_with('-')).for_each(|a| {
-                    let remote = app.get_repository().get_package(&a)
-                        .expect(format!("Package {} not found!", &a).as_str());
-
-                    target_packages.get_or_insert_with(|| Vec::new())
-                        .push(remote.clone());
-
-                    let summary = app.get_summary();
-                    if let Some(local) = summary.find(&remote).cloned() {
-                        target_local_packages.get_or_insert_with(|| Vec::new())
-                            .push(local);
-                    }
+                    target_packages.get_or_insert_with(Vec::new).push(a);
                 });
             },
             _ => { }
         }
     }
-    
+
     let workload = match command.unwrap_or("/install".to_owned()).as_str() {
         "/install" => WorkloadKind::Installer(InstallerOptions::new(target_packages)),
-        "/uninstall" => WorkloadKind::Uninstaller(UninstallerOptions::new(target_local_packages)),
-        "/update" => WorkloadKind::Updater(UpdaterOptions::new(target_local_packages)),
+        "/uninstall" => WorkloadKind::Uninstaller(UninstallerOptions::new(target_packages)),
+        "/update" => WorkloadKind::Updater(UpdaterOptions::new(target_packages)),
         _ => panic!("Unrecognized command!")
     };
 

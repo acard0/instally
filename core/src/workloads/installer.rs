@@ -11,19 +11,19 @@ use async_trait::async_trait;
 use definitions::error::PackageInstallError;
 use rust_i18n::error::{Error, ErrorDetails};
 
-use self::definitions::package::Package;
-
 use super::workload::Workload;
 
 pub type InstallerWrapper = AppWrapper<InstallerOptions>;
 
 #[derive(Clone)]
 pub struct InstallerOptions {
-    pub target_packages: Option<Vec<Package>>,
+    /// Names of the packages to install. `None` installs the repository's
+    /// default packages.
+    pub target_packages: Option<Vec<String>>,
 }
 
 impl InstallerOptions {
-    pub fn new(target_packages: Option<Vec<Package>>) -> Self {
+    pub fn new(target_packages: Option<Vec<String>>) -> Self {
         InstallerOptions { target_packages }
     }
 }
@@ -57,6 +57,9 @@ impl InstallerWrapper {
         log::info!("Starting to install {}", &self.app.get_product().name);
         log::info!("Target directory {:?}", &self.app.get_product().get_relative_target_directory());
 
+        self.app.set_workload_state(InstallerWorkloadState::FetchingRemoteTree(self.app.get_product().name.clone()));
+        self.app.ensure_repository().await?;
+
         helpers::process::terminate_processes_under_folder(self.app.get_product().get_relative_target_directory())
             .map_err(|err| Error::from(IoError::from(err)))?;
 
@@ -68,12 +71,18 @@ impl InstallerWrapper {
 
         self.app.dump_product_to_installation_directory(None)?;
 
-        self.app.set_workload_state(InstallerWorkloadState::FetchingRemoteTree(self.app.get_product().name.clone()));     
         let repository = self.app.get_repository();
-
         let targets = match &self.settings.target_packages {
             None => repository.get_default_packages(),
-            Some(t) => t.to_vec()
+            Some(names) => names.iter()
+                .filter_map(|name| match repository.get_package(name) {
+                    Some(package) => Some(package),
+                    None => {
+                        log::warn!("Package '{}' not found in repository, skipping.", name);
+                        None
+                    }
+                })
+                .collect()
         };
 
         log::info!("Packages in installition queue: {}", targets.iter().map(|e| e.display_name.clone()).collect::<Vec<_>>().join(", "));

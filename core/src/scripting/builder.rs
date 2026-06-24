@@ -172,7 +172,7 @@ mod tests {
                 "@{Directories.User.Home}\\AppData\\Local\\@{App.Publisher}\\@{App.Name}",
             )
         ).expect("failed to build test product");
-        let app = InstallyApp::build(&product).await.expect("failed to build instally app");
+        let app = InstallyApp::build_with_remote_repository(&product).await.expect("failed to build instally app");
 
         let rt = Runtime::new().unwrap();
         let ctx = Context::builder()
@@ -205,7 +205,7 @@ mod tests {
             )
         ).expect("failed to build test product");
 
-        let app = InstallyApp::build(&product).await.expect("failed to build instally app");
+        let app = InstallyApp::build_with_remote_repository(&product).await.expect("failed to build instally app");
         let rt = IJSRuntime::current_or_get();
         let ctx = rt.create_context(&app, None);
 
@@ -231,7 +231,7 @@ mod tests {
             )
         ).expect("failed to build test product");
 
-        let app = InstallyApp::build(&product).wait().expect("failed to build instally app");
+        let app = InstallyApp::build_with_remote_repository(&product).wait().expect("failed to build instally app");
         let rt = IJSRuntime::current_or_get();
         let ctx = rt.create_context(&app, None);
         
@@ -267,7 +267,7 @@ mod tests {
             )
         )?;
 
-        let app = InstallyApp::build(&product)
+        let app = InstallyApp::build_with_remote_repository(&product)
             .wait()?;
 
         let rt = IJSRuntime::current_or_get();
@@ -303,7 +303,7 @@ mod tests {
             )
         ).unwrap();
 
-        let app = InstallyApp::build(&product)
+        let app = InstallyApp::build_with_remote_repository(&product)
             .wait().unwrap();
 
         let rt = IJSRuntime::current_or_get();

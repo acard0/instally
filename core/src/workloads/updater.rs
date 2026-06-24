@@ -1,8 +1,6 @@
 
 use std::fmt::{Formatter, Display};
 
-use self::definitions::summary::PackageInstallation;
-
 use async_trait::async_trait;
 use definitions::error::PackageUpdateError;
 use rust_i18n::error::{Error, ErrorDetails};
@@ -19,11 +17,13 @@ pub type UpdaterWrapper = AppWrapper<UpdaterOptions>;
 
 #[derive(Clone)]
 pub struct UpdaterOptions {
-    pub target_packages: Option<Vec<PackageInstallation>>,
+    /// Names of the packages to update. `None` updates every installed package
+    /// that is outdated.
+    pub target_packages: Option<Vec<String>>,
 }
 
 impl UpdaterOptions {
-    pub fn new(target_packages: Option<Vec<PackageInstallation>>) -> Self {
+    pub fn new(target_packages: Option<Vec<String>>) -> Self {
         UpdaterOptions { target_packages }
     }
 }
@@ -57,13 +57,14 @@ impl UpdaterWrapper {
         log::info!("Starting to update {}", &self.app.get_product().name);
         log::info!("Target directory {:?}", &self.app.get_product().get_relative_target_directory());
 
-        let summary = self.app.get_summary();  
+        self.app.set_workload_state(UpdaterWorkloadState::FetchingRemoteTree(self.app.get_product().name.clone()));
+        self.app.ensure_repository().await?;
+
+        let summary = self.app.get_summary();
         let global = self.app.download_global_script().await?;
         global.if_exist(|s| Ok(s.invoke_before_update()?))?;
 
-        self.app.set_workload_state(UpdaterWorkloadState::FetchingRemoteTree(self.app.get_product().name.clone()));    
         let repository = self.app.get_repository();
-
         let state = summary.cross_check(&repository.packages);
 
         log::info!("Installed packages: {}", summary.packages.iter().map(|e| e.display_name.clone()).collect::<Vec<_>>().join(", "));
@@ -80,7 +81,7 @@ impl UpdaterWrapper {
 
             // check if package is opted-out specifically via start args
             if let Some(targets) = &self.settings.target_packages {
-                if !targets.iter().any(|f| &f.name == &local.name) {
+                if !targets.iter().any(|name| name == &local.name) {
                     log::info!("Skipping update of {} as it's not listed in target package list. Installed: {}, New: {}.", local.display_name, local.version, remote.version);
                     continue;
                 }

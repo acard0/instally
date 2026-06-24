@@ -4,7 +4,7 @@ use async_trait::async_trait;
 use definitions::error::PackageUninstallError;
 use rust_i18n::error::{Error, ErrorDetails};
 
-use crate::{definitions::{script::ScriptOptional, summary::PackageInstallation}, extensions::future::FutureSyncExt, helpers::file::IoError};
+use crate::{definitions::script::ScriptOptional, extensions::future::FutureSyncExt, helpers::file::IoError};
 
 use crate::*;
 use crate::definitions::context::AppWrapper;
@@ -14,11 +14,13 @@ pub type UninstallerWrapper = AppWrapper<UninstallerOptions>;
 
 #[derive(Clone)]
 pub struct UninstallerOptions {
-    pub target_packages: Option<Vec<PackageInstallation>>,
+    /// Names of the packages to remove. `None` removes every installed
+    /// package.
+    pub target_packages: Option<Vec<String>>,
 }
 
 impl UninstallerOptions {
-    pub fn new(target_packages: Option<Vec<PackageInstallation>>) -> Self {
+    pub fn new(target_packages: Option<Vec<String>>) -> Self {
         UninstallerOptions { target_packages }
     }
 }
@@ -62,21 +64,27 @@ impl UninstallerWrapper {
         log::info!("Starting to uninstall {}", &self.app.get_product().name);
         log::info!("Target directory {:?}", &self.app.get_product().get_relative_target_directory());
 
+        self.app.set_workload_state(UninstallerWorkloadState::FetchingRemoteTree(self.app.get_product().name.clone()));
+        self.app.ensure_repository().await?;
+
         helpers::process::terminate_processes_under_folder(self.app.get_product().get_relative_target_directory())
             .map_err(|err| Error::from(IoError::from(err)))?;
 
         let global = self.app.download_global_script().await?;
         global.if_exist(|s| Ok(s.invoke_before_uninstallition()?))?;
 
-        let summary = self.app.get_summary(); 
+        let summary = self.app.get_summary();
         let targets = match &self.settings.target_packages {
-            Some(opted) => {
-                opted.to_owned()
+            Some(names) => {
+                summary.packages.iter()
+                    .filter(|p| names.contains(&p.name))
+                    .cloned()
+                    .collect::<Vec<_>>()
             }
             None => {
                 summary.packages.clone()
-            } 
-        }; 
+            }
+        };
 
         log::info!("Installed packages: {}", summary.packages.iter().map(|e| e.display_name.clone()).collect::<Vec<_>>().join(", ")); 
         log::info!("Packages that will be removed: {}", targets.iter().map(|e| e.display_name.clone()).collect::<Vec<_>>().join(", "));     
@@ -96,6 +104,7 @@ impl UninstallerWrapper {
 
 #[derive(Debug, Clone)]
 pub enum UninstallerWorkloadState {
+    FetchingRemoteTree(String),
     RemovingPackage(String),
     Interrupted(ErrorDetails),
     Done,
@@ -104,6 +113,10 @@ pub enum UninstallerWorkloadState {
 impl Display for UninstallerWorkloadState {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
+            UninstallerWorkloadState::FetchingRemoteTree(s) => {
+                write!(f, "{:?}", t!("states.fetching-repositoryOfX", [s]))
+            },
+
             UninstallerWorkloadState::RemovingPackage(s) => {
                 write!(f, "{}", t!("states.removing-package", [s]))
             },

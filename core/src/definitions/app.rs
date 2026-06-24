@@ -1,6 +1,7 @@
 use std::{fmt::Display, path::Path, sync::Arc};
 
 use parking_lot::Mutex;
+use tokio::sync::OnceCell;
 
 use crate::{definitions::{dependency::{DependencyFile, PackageFile}, package::Package, product::Product, repository::Repository, script::Script, summary::InstallationSummary}, helpers::{self, file::IoError, tmp, workflow::Workflow}, http::client::{self, HttpStreamError}, workloads::{operations::{archive::ExtractArchiveOperation, createappentry::CreateAppEntryOperation, createfile::CreateFileOperation, createmaintinancetool::CreateMaintenanceToolOperation, createsymlink::CreateSymlinkOperation}, workload::WorkloadResult}};
 
@@ -9,23 +10,24 @@ use super::{context::{AppContext, AppContextField}, error::{AppBuildError, Packa
 #[derive(Clone, Debug)]
 pub struct InstallyApp {
     product: Product,
-    repository: Repository,
+    repository: Arc<OnceCell<Repository>>,
     context: Arc<Mutex<AppContext>>,
 }
 
 impl Default for InstallyApp {
     fn default() -> Self {
-        Self { product: Default::default(), repository: Default::default(), context: Arc::new(Mutex::new(AppContext::default())) }
+        Self { product: Default::default(), repository: Arc::new(OnceCell::new()), context: Arc::new(Mutex::new(AppContext::default())) }
     }
 }
 
 impl InstallyApp
 {
     pub fn default_with_product(product: &Product) -> Self {
-        Self { product: product.clone(), repository: Default::default(), context: Arc::new(Mutex::new(AppContext::default())) }
+        Self { product: product.clone(), repository: Arc::new(OnceCell::new()), context: Arc::new(Mutex::new(AppContext::default())) }
     }
 
-    pub async fn build(product: &Product) -> Result<Self, AppBuildError> {
+    /// Constructs the app meta without performing any network calls.
+    pub fn new(product: &Product) -> Result<Self, AppBuildError> {
         log::info!("Building InstallyApp meta");
 
         let workflow = helpers::workflow::define_workflow_env(&product)?;
@@ -41,12 +43,15 @@ impl InstallyApp
 
         Ok(InstallyApp {
             context: Arc::new(Mutex::new(AppContext::new(summary))),
-            product: product.clone(), 
-            repository: match product.fetch_repository().await {
-                Ok(it) => it,
-                Err(err) => return Err(err.into()),
-            },
+            product: product.clone(),
+            repository: Arc::new(OnceCell::new()),
         })
+    }
+
+    pub async fn build_with_remote_repository(product: &Product) -> Result<Self, AppBuildError> {
+        let app = Self::new(product)?;
+        app.ensure_repository().await?;
+        Ok(app)
     }
 
     /// Gets app context
@@ -77,9 +82,12 @@ impl InstallyApp
         &self.product
     }
 
-    /// Gets 'Repository'
+    /// Gets the remote 'Repository'.
+    ///
+    /// Panics if it has not been fetched yet by [`InstallyApp::ensure_repository`]
     pub fn get_repository(&self) -> &Repository {
-        &self.repository
+        self.repository.get()
+            .expect("repository has not been fetched yet; call ensure_repository() first")
     }
 
     /// Sets workload state
@@ -100,9 +108,11 @@ impl InstallyApp
         ctx.update_field(AppContextField::result(Some(result.clone())))
     }
 
-    /// Fetchs remote tree meta
-    pub async fn fetch_repository(&self) -> Result<Repository, RepositoryFetchError>{
-        self.product.fetch_repository().await
+    /// Fetches the remote repository on first call and caches it
+    pub async fn ensure_repository(&self) -> Result<&Repository, RepositoryFetchError> {
+        self.repository
+            .get_or_try_init(|| self.product.fetch_repository())
+            .await
     }
 
     /// Downloads package file of specified package
@@ -174,8 +184,8 @@ impl InstallyApp
     /// Performs uninstallation for specified package installation
     pub async fn uninstall_package(&self, package_installation: &PackageInstallation) -> Result<(), PackageUninstallError> {
         let product = &self.product;
-        let package = self.repository.get_package(&package_installation.name).unwrap();
-        let script = self.download_package_script(&package).await?; 
+        let package = self.get_repository().get_package(&package_installation.name).unwrap();
+        let script = self.download_package_script(&package).await?;
 
         script.if_exist(|s| Ok(s.invoke_before_uninstallition()?))?;
 

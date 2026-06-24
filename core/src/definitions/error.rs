@@ -47,6 +47,9 @@ pub enum ScriptError {
 #[derive(thiserror::Error, rust_i18n::AsDetails, strum::AsRefStr, Debug)]
 pub enum PackageInstallError {
     #[error("{}", .0.get_message_key())]
+    Repository(#[from] RepositoryFetchError),
+
+    #[error("{}", .0.get_message_key())]
     Script(#[from] ScriptError),
 
     #[error("{}", .0.get_message_key())]
@@ -62,6 +65,9 @@ pub enum PackageUninstallError {
     InstallationNotFound,
 
     #[error("{}", .0.get_message_key())]
+    Repository(#[from] RepositoryFetchError),
+
+    #[error("{}", .0.get_message_key())]
     Script(#[from] ScriptError),
 
     #[error("{}", .0.get_details().fullname)]
@@ -70,6 +76,9 @@ pub enum PackageUninstallError {
 
 #[derive(thiserror::Error, rust_i18n::AsDetails, strum::AsRefStr, Debug)]
 pub enum PackageUpdateError {
+    #[error("{}", .0.get_message_key())]
+    Repository(#[from] RepositoryFetchError),
+
     #[error("{}", .0.get_message_key())]
     Script(#[from] ScriptError),
 
